@@ -82,73 +82,80 @@
 
 (defconst org-dp-interpreted-keys-alist
   (list
-   '(center-block ((contents . (consp stringp))))
-   '(drawer ((:drawer-name . stringp)
-	     (contents . consp)))
-   '(dynamic-block ((:block-name . stringp)
-		    (:arguments . stringp)
-		    (contents . (consp stringp))))
-   '(footnote-definition ((:label . stringp)
-			  (contents . (consp stringp))))
+   '(center-block ((contents . "%s ipsum")))
+   '(drawer ((:drawer-name . (make-temp-name "drawer"))
+	     (contents . "%s ipsum")))
+   '(dynamic-block ((:block-name . (make-temp-name "dynblock"))
+		    (:arguments . ":format \"on %m%d%Y at %H:%M\"")
+		    (contents . "%s ipsum")))
+   '(footnote-definition ((:label . (make-temp-name "fn-def"))
+			  (contents . "%s ipsum")))
    '(headline ((:level . (1 2 3 4 5 6 7 8))
 	       (:todo-keyword . org-todo-keyword-alist-for-agenda)
 	       (:priority . (?A ?B ?C))
-	       (:title . consp)
-	       (:archivedp . symbolp)
-	       (:tags . consp)
-	       (:commentedp . booleanp)
-	       (:pre-blank . numberp)
-	       (:footnote-section-p . booleanp)
-	       (contents . (consp stringp))))
+	       (:title . "headline %s")
+	       (:archivedp . (t nil))
+	       (:tags . (("home" "office") ("home") ("office") ()))
+	       (:commentedp . (t nil))
+	       (:pre-blank . (1 2 nil))
+	       (:footnote-section-p . (t nil))
+	       (contents . "%s ipsum")))
    '(inline-task ((:level . (1 2 3 4 5 6 7 8))
 		  (:todo-keyword
 		   . org-todo-keyword-alist-for-agenda)
 		  (:priority . (?A ?B ?C))
-		  (:title . consp)
-		  (:tags . consp)
-		  (contents . (consp stringp))))
-   '(item ((:bullet . stringp)
-	   (:checkbox . stringp)
-	   (:counter . numberp)
-	   (:tag . stringp)
-	   (contents . (consp stringp))))
-   '(plain-list ((contents . (consp stringp))))
-   '(property-drawer ((contents .(consp stringp))))
-   '(quote-block ((contents . (consp stringp))))
-   '(section ((contents . (consp stringp))))
-   '(special-block ((:type . stringp)
-		    (contents . (consp stringp))))
-   '(babel-call ((:value . stringp)))
-   '(clock ((:value . stringp)
-	    (:duration . stringp)))
-   '(comment ((:value . stringp)))
-   '(comment-block ((:value . stringp)))
-   '(diary-sexp ((:value . stringp)))
-   '(example-block ((:switches . stringp)
-		    (:preserve-intent . numberp) ; FIXME number?
-		    (:value . stringp)))
-   '(fixed-width ((:value . stringp)))
-   '(horizontal-rule (()))
-   '(keyword ((:key . stringp)
-	      (:value . stringp)))
-   '(latex-environment ((:value . stringp)))
-   '(node-property ((:key . stringp)
-		    (:value . stringp)))
-   '(paragraph ((contents . (consp stringp))))
-   '(planning ((:deadline . stringp)
-	       (:scheduled . stringp)
-	       (:closed . stringp)))
-   '(scr-block ((:language . stringp)
-		(:switches . stringp)
-		(:parameters . stringp)
-		(:value . stringp)
-		(:preserve-indent . numberp))) ; FIXME number?
-   '(table ((:type . symbolp)
-	    (:value . stringp)
-	    (:tblfm . consp)))
-   '(table-row ((:type . symbolp)
-		(contents . (consp stringp))))
-   '(quote-block ((contents . (consp stringp)))))
+		  (:title . "headline %s")
+		  (:tags
+		   . (("home" "office") ("home") ("office") ()))
+		  (contents . "%s ipsum")))
+   '(item ((:bullet . ("-" "+"))
+	   (:checkbox . "[ ]")
+	   (:counter . nil)
+	   (:tag . (make-temp-name "item"))
+	   (contents . "%s ipsum")))
+   '(plain-list ((contents . "%s ipsum")))
+   '(property-drawer ((contents ."%s ipsum")))
+   '(quote-block ((contents . "%s ipsum")))
+   '(section ((contents . "%s ipsum")))
+   '(special-block ((:type . ("LATEX" "HTML" "ORG"))
+		    (contents . "%s ipsum")))
+   '(babel-call ((:value . "%s")))
+   '(clock ((:value
+	     . "[2014-08-15 Fr 17:17]--[2014-08-15 Fr 17:20]")
+	    (:duration . "0:03")))
+   '(comment ((:value . "%s ipsum")))
+   '(comment-block ((:value . "%s ipsum")))
+   '(diary-sexp ((:value
+		  ."%%(org-anniversary 1956 5 14) A.D %dy old" )))
+   '(example-block ((:switches . ("-n -r" "-n" "-r" ""))
+		    (:preserve-intent . (1 nil)) ; FIXME number?
+		    (:value . "%s ipsum")))
+   '(fixed-width ((:value . "%s ipsum")))
+   '(horizontal-rule ("-----"))
+   '(keyword ((:key . (make-temp-name "kw"))
+	      (:value . (make-temp-name "val"))))
+   '(latex-environment ((:value . " a=+\sqrt{2} ")))
+   '(node-property ((:key . (make-temp-name "prop"))
+		    (:value . (make-temp-name "val"))))
+   '(paragraph ((contents . "%s ipsum")))
+   '(planning ((:deadline . "<2014-08-15 Fr 22:00>")
+	       (:scheduled
+		. "<2014-08-15 Fr 20:00>--<2014-08-15 Fr 21:00>")
+	       (:closed . nil)))
+   '(scr-block ((:language . (mapcar
+			      (lambda (--lang)
+				(symbol-name (car --lang)))
+			      org-babel-load-languages))
+		(:switches . ("-n -r" "-n" "-r" ""))
+		(:parameters . ":var x=5 :results raw")
+		(:value . "x")
+		(:preserve-indent . (1 nil)))) ; FIXME number?
+   '(table ((:type . (org table.el))
+	    (:value . "| %s | ipsum |\n| %s | ipsum |\n")
+	    (:tblfm . "$5=taylor($2,%4,%3);n3")))
+   '(table-row ((:type . (rule standard))
+		(contents . "%s ipsum")))
+   '(quote-block ((contents . "%s ipsum"))))
   "AList of elements and interpreted keywords with
   type-information.")
 
@@ -164,8 +171,8 @@
    '(italic . "/lorem/")
    '(latex-fragment
      . "\begin{equation}\nlorem=\sqrt{x}\n\end{equation}")
-   '(line-break . "lorem\\\\\nipsum")
-   '(link-interpreter . "[[http://orgmode.org/] [Lorem]]")
+   '(line-break . "lorem\\\\\n")
+   '(link-interpreter . "[[http://orgmode.org/][Lorem]]")
    '(macro . "{{{lorem(arg1, arg2)}}}")
    '(radio-target . "<<<lorem>>>")
    '(statistics-cookie . "[33%]")
@@ -187,23 +194,25 @@
   (let* ((type (or elem-type 'headline))
 	 (cont (if (consp contents)
 		   contents
+		 ;; FIXME enclose in paragraph?
 		 (list 'section nil `(paragraph nil ,contents))))
 	 (strg (org-element-interpret-data
  	       (list type args cont))))
     (if insert-p (insert strg) strg)))
 
+;; TODO check and delete
+;; Note that, if ELEMENT is given and should be replaced, it *must*
+;; be a quoted (!) symbol with an Org element's parse-tree as
+;; value. This is because after rewiring a parsed *and* assigned Org
+;; element its location properties like `:begin', `:end' and
+;; `post-affiliated' might have changed and must be updated by
+;; parsing the rewired and inserted element-at-point
+;; again. Otherwise, if ELEMENT is given and REPLACE is either
+;; `nil', `append' or `prepend', it can be given as a nested list
+;; too, in form of the elements parse-tree.
+
 (defun* org-dp-rewire (elem-type &optional element contents replace affiliated &rest args &allow-other-keys)
   "Rewire element-at-point or ELEMENT (if given).
-
-Note that, if ELEMENT is given and should be replaced, it *must*
-be a quoted (!) symbol with an Org element's parse-tree as
-value. This is because after rewiring a parsed *and* assigned Org
-element its location properties like `:begin', `:end' and
-`post-affiliated' might have changed and must be updated by
-parsing the rewired and inserted element-at-point
-again. Otherwise, if ELEMENT is given and REPLACE is either
-`nil', `append' or `prepend', it can be given as a nested list
-too, in form of the elements parse-tree.
 
 If CONTENT is non-nil, act conditional on its value:
 
@@ -241,9 +250,10 @@ Act conditional on value of AFFILIATED:
  - nil :: (boolean) no affiliated keywords are retained in
           rewired element.
 
-ELEM-TYPE is one of the types in `org-element-all-elements'. ARGS is a
-plist consisting of key-val pairs of all other keyword arguments
-given. 
+ELEM-TYPE is one of the types in `org-element-all-elements'. If
+it is nil, the element type of the original element is used. ARGS
+is a plist consisting of key-val pairs of all other keyword
+arguments given.
 
 The former value of an element property can be reused in the
 creation of a new value by giving a `lambda' expession with two
@@ -252,8 +262,7 @@ argument will then be replaced by the property's former value
 when applying the function. The second argument should be the
 parsed element itself, enabling access to its type and all its
 properties inside of the lambda expression."
-  (let* ((type (or elem-type (headline)))
-	 (orig-elem (cond
+  (let* ((orig-elem (cond
 		     ((and (not (booleanp element))
 			   (symbolp element))
 		      (eval element))
@@ -262,6 +271,7 @@ properties inside of the lambda expression."
 			(when (consp el) el)))
 		     ((consp element) element)
 		     (t (org-element-at-point))))
+	 (type (or elem-type (org-element-type orig-elem)))
 	 (elem (copy-list orig-elem))
 	 (plist (copy-list (cadr elem)))
 	 (beg (set-marker
@@ -682,16 +692,30 @@ prompt the user for additional header-args."
     (call-interactively 'tj/wrap-in-block)))
 
 (defun org-dp-lorem-ipsum (&optional number-of-entries)
-  "Create random Org document with N entries."
-  (let ((N (or number-of-entries 100))
+  "Create random Org document with N entries.
+Use  NUMBER-OF-ENTRIES if given, otherwise set N to 10."
+  (let ((N (or number-of-entries 10))
 	(elems org-dp-interpreted-keys-alist)
 	(objs org-dp-lorem-objects)
-	last-level rnd strg)
+	last-level level rnd strg)
     (with-current-buffer (get-buffer-create "*Org Lorem Ipsum*")
       (dotimes (i N strg)
 	(setq rnd (1+ (random 100)))
+	(setq level (case last-level
+			   (1 (if (< rnd 51) 1 2))
+			   ((number-sequence 2 7)
+			    (cond
+			     ((< rnd 26) (1- last-level))
+			     ((< rnd 51) last-level)
+			     ((< rnd 76) (1+ last-level))
+			     (t 1)))
+			   (8 (cond
+			       ((< rnd 34) 7)
+			       ((< rnd 68) 8)
+			       (t 1)))
+			   (t 1)))
 	(org-dp-create
-	 nil
+	 
 	 (if (< rnd 50) )
 		       
 	 
@@ -713,7 +737,7 @@ them all :header or :parameter values repectively."
       ;; swap :parameters and :header args
       (swap
        (org-dp-rewire
-	'src-block nil t t t
+	nil nil t t t
 	:parameters (lambda (_old_ elem)
 		      (org-string-nw-p
 		       (mapconcat
@@ -734,13 +758,11 @@ them all :header or :parameter values repectively."
 				     (pop params))
 			     headers)))
 		    headers))
-	:preserve-indent 1
-	:type 'src-block))
+	:preserve-indent 1))
       ;; convert :parameters to :header args
       (header
        (org-dp-rewire
-	'src-block nil t t t
-	:type 'src-block
+	nil nil t t t
 	:preserve-indent 1
 	:parameters nil
 	:header (lambda (_old_ elem)
@@ -761,8 +783,7 @@ them all :header or :parameter values repectively."
       ;; convert :header args to :parameters
       (param
        (org-dp-rewire
-	'src-block nil t t t
-	:type 'src-block
+	nil nil t t t
 	:preserve-indent 1
 	:parameters (lambda (_old_ elem)
 		      (concat 
