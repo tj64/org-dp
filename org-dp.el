@@ -713,7 +713,7 @@ them all :header or :parameter values repectively."
       ;; swap :parameters and :header args
       (swap
        (org-dp-rewire
-	nil t t t
+	'src-block nil t t t
 	:parameters (lambda (_old_ elem)
 		      (org-string-nw-p
 		       (mapconcat
@@ -739,7 +739,7 @@ them all :header or :parameter values repectively."
       ;; convert :parameters to :header args
       (header
        (org-dp-rewire
-	nil t t t
+	'src-block nil t t t
 	:type 'src-block
 	:preserve-indent 1
 	:parameters nil
@@ -761,7 +761,7 @@ them all :header or :parameter values repectively."
       ;; convert :header args to :parameters
       (param
        (org-dp-rewire
-	nil t t t
+	'src-block nil t t t
 	:type 'src-block
 	:preserve-indent 1
 	:parameters (lambda (_old_ elem)
