@@ -1,7 +1,7 @@
 ;;; org-dp.el --- Declarative Programming with Org Elements
 ;; Author: Thorsten Jolitz <tjolitz AT gmail DOT com>
 ;; Version: 0.9
-;; URL: https://github.com/tj64/puml
+;; URL: https://github.com/tj64/org-dp
 
 ;;;; MetaData
 ;;   :PROPERTIES:
@@ -82,93 +82,106 @@
 
 (defconst org-dp-interpreted-keys-alist
   (list
-   '(center-block ((contents . "%s ipsum")))
-   '(drawer ((:drawer-name . (make-temp-name "drawer"))
-	     (contents . "%s ipsum")))
-   '(dynamic-block ((:block-name . (make-temp-name "dynblock"))
-		    (:arguments . ":format \"on %m%d%Y at %H:%M\"")
-		    (contents . "%s ipsum")))
-   '(footnote-definition ((:label . (make-temp-name "fn-def"))
-			  (contents . "%s ipsum")))
-   '(headline ((:level . (1 2 3 4 5 6 7 8))
-	       (:todo-keyword . org-todo-keyword-alist-for-agenda)
-	       (:priority . (?A ?B ?C))
-	       (:title . "headline %s")
-	       (:archivedp . (t nil))
-	       (:tags . (("home" "office") ("home") ("office") ()))
-	       (:commentedp . (t nil))
-	       (:pre-blank . (1 2 nil))
-	       (:footnote-section-p . (t nil))
+   '(center-block . ((contents . "%s ipsum")))
+   '(drawer . ((:drawer-name . (make-temp-name "drawer"))
 	       (contents . "%s ipsum")))
-   '(inline-task ((:level . (1 2 3 4 5 6 7 8))
-		  (:todo-keyword
-		   . org-todo-keyword-alist-for-agenda)
-		  (:priority . (?A ?B ?C))
-		  (:title . "headline %s")
-		  (:tags
-		   . (("home" "office") ("home") ("office") ()))
-		  (contents . "%s ipsum")))
-   '(item ((:bullet . ("-" "+"))
-	   (:checkbox . "[ ]")
-	   (:counter . nil)
-	   (:tag . (make-temp-name "item"))
-	   (contents . "%s ipsum")))
-   '(plain-list ((contents . "%s ipsum")))
-   '(property-drawer ((contents ."%s ipsum")))
-   '(quote-block ((contents . "%s ipsum")))
-   '(section ((contents . "%s ipsum")))
-   '(special-block ((:type . ("LATEX" "HTML" "ORG"))
+   '(dynamic-block . ((:block-name . (make-temp-name "dynblock"))
+		      (:arguments
+		       . ":format \"on %m%d%Y at %H:%M\"")
+		      (contents . "%s ipsum")))
+   '(footnote-definition . ((:label . (make-temp-name "fn-def"))
+			    (contents . "%s ipsum")))
+   '(headline . ((:level . (1 2 3 4 5 6 7 8))
+		 (:todo-keyword . org-todo-keywords-for-agenda)
+		 (:priority . (?A ?B ?C))
+		 (:title . "headline %s")
+		 (:archivedp . (t nil))
+		 (:tags
+		  . (("home" "office") ("home") ("office") ()))
+		 (:commentedp . (t nil))
+		 (:pre-blank . (1 2 nil))
+		 (:footnote-section-p . (t nil))
+		 (contents . "%s ipsum")))
+   '(inline-task . ((:level . (1 2 3 4 5 6 7 8))
+		    (:todo-keyword
+		     . org-todo-keyword-alist-for-agenda)
+		    (:priority . (?A ?B ?C))
+		    (:title . "headline %s")
+		    (:tags
+		     . (("home" "office") ("home") ("office") ()))
 		    (contents . "%s ipsum")))
-   '(babel-call ((:value . "%s")))
-   '(clock ((:value
-	     . "[2014-08-15 Fr 17:17]--[2014-08-15 Fr 17:20]")
-	    (:duration . "0:03")))
-   '(comment ((:value . "%s ipsum")))
-   '(comment-block ((:value . "%s ipsum")))
-   '(diary-sexp ((:value
-		  ."%%(org-anniversary 1956 5 14) A.D %dy old" )))
-   '(example-block ((:switches . ("-n -r" "-n" "-r" ""))
-		    (:preserve-intent . (1 nil)) ; FIXME number?
-		    (:value . "%s ipsum")))
-   '(fixed-width ((:value . "%s ipsum")))
-   '(horizontal-rule ("-----"))
-   '(keyword ((:key . (make-temp-name "kw"))
-	      (:value . (make-temp-name "val"))))
-   '(latex-environment ((:value . " a=+\sqrt{2} ")))
-   '(node-property ((:key . (make-temp-name "prop"))
-		    (:value . (make-temp-name "val"))))
-   '(paragraph ((contents . "%s ipsum")))
-   '(planning ((:deadline . "<2014-08-15 Fr 22:00>")
-	       (:scheduled
-		. "<2014-08-15 Fr 20:00>--<2014-08-15 Fr 21:00>")
-	       (:closed . nil)))
-   '(scr-block ((:language . (mapcar
-			      (lambda (--lang)
-				(symbol-name (car --lang)))
-			      org-babel-load-languages))
-		(:switches . ("-n -r" "-n" "-r" ""))
-		(:parameters . ":var x=5 :results raw")
-		(:value . "x")
-		(:preserve-indent . (1 nil)))) ; FIXME number?
-   '(table ((:type . (org table.el))
-	    (:value . "| %s | ipsum |\n| %s | ipsum |\n")
-	    (:tblfm . "$5=taylor($2,%4,%3);n3")))
-   '(table-row ((:type . (rule standard))
-		(contents . "%s ipsum")))
-   '(quote-block ((contents . "%s ipsum"))))
-  "AList of elements and interpreted keywords with
-  type-information.")
+   '(item . ((:bullet . ("-" "+"))
+	     (:checkbox . "[ ]")
+	     (:counter . nil)
+	     (:tag . (make-temp-name "item"))
+	     (contents . "%s ipsum")))
+   '(plain-list . ((contents . "%s ipsum")))
+   '(property-drawer . ((contents ."%s ipsum")))
+   '(quote-block . ((contents . "%s ipsum")))
+   '(section . ((contents . "%s ipsum")))
+   '(special-block . ((:type . ("LATEX" "HTML" "ORG"))
+		      (contents . "%s ipsum")))
+   '(babel-call . ((:value . "%s")))
+   '(clock . ((:value
+	       . "[2014-08-15 Fr 17:17]--[2014-08-15 Fr 17:20]")
+	      (:duration . "0:03")))
+   '(comment . ((:value . "%s ipsum")))
+   '(comment-block . ((:value . "%s ipsum")))
+   '(diary-sexp . ((:value
+		    ."%%(org-anniversary 1956 5 14) A.D %dy old" )))
+   '(example-block . ((:switches . ("-n -r" "-n" "-r" ""))
+		      (:preserve-intent . (1 nil)) ; FIXME number?
+		      (:value . "%s ipsum")))
+   '(fixed-width . ((:value . "%s ipsum")))
+   '(horizontal-rule . ("-----"))
+   '(keyword . ((:key . "TODO")
+		(:value . "TODO | DONE")))
+   ;; '(keyword . ((:key . (make-temp-name "kw"))
+   ;; 	      (:value . (make-temp-name "val"))))
+   '(latex-environment . ((:value . " a=+\sqrt{2} ")))
+   '(node-property . ((:key . (make-temp-name "prop"))
+		      (:value . (make-temp-name "val"))))
+   '(paragraph . ((contents . "%s ipsum")))
+   '(planning . ((:deadline . "<2014-08-15 Fr 22:00>")
+		 (:scheduled
+		  . "<2014-08-15 Fr 20:00>--<2014-08-15 Fr 21:00>")
+		 (:closed . nil)))
+   '(scr-block . ((:language . (mapcar
+				(lambda (--lang)
+				  (symbol-name (car --lang)))
+				org-babel-load-languages))
+		  (:switches . ("-n -r" "-n" "-r" ""))
+		  (:parameters . ":var x=5 :results raw")
+		  (:value . "x")
+		  (:preserve-indent . (1 nil)))) ; FIXME number?
+   '(table . ((:type . (org table.el))
+	      (:value . "| %s | ipsum |\n| lorem | ipsum |\n")
+	      (:tblfm . "$5=taylor($2,%4,%3);n3")))
+   '(table-row . ((:type . (rule standard))
+		  (contents . "%s ipsum")))
+   '(quote-block . ((contents . "%s ipsum"))))
+  "AList of elements and their interpreted keywords, with
+  example values.")
 
-(defconst org-dp-lorem-objects
+(defconst org-dp-lorem-objects-1
   (list
    '(bold . "*lorem*")
    '(code . "~lorem~")
-   '(entity . "\\emph{}")
+   '(entity . "\\alpha")
+   '(italic . "/lorem/")
+   '(strike-through . "+lorem+")
+   '(subscript . "_{lorem}")
+   '(superscript . "^{lorem}")
+   '(underline . "_lorem_")
+   '(verbatim . "=lorem="))
+  "AList 1 of object types and examples.")
+
+(defconst org-dp-lorem-objects-2
+  (list
    '(export-snippet . "@@ascii:lorem@@")
    '(footnote-reference . "[fn::lorem]")
    '(inline-babel-call . "call_lorem()")
    '(inline-src-block . "src_emacs-lisp[:var x=lorem]{x}")
-   '(italic . "/lorem/")
    '(latex-fragment
      . "\begin{equation}\nlorem=\sqrt{x}\n\end{equation}")
    '(line-break . "lorem\\\\\n")
@@ -176,28 +189,22 @@
    '(macro . "{{{lorem(arg1, arg2)}}}")
    '(radio-target . "<<<lorem>>>")
    '(statistics-cookie . "[33%]")
-   '(strike-through . "+lorem+")
-   '(subscript . "_{lorem}")
-   '(superscript . "^{lorem}")
    '(table-cell . " lorem |")
    '(target . "<<lorem>>")
-   '(timestamp . "<2014-08-14 Do 20:53>")
-   '(underline . "_lorem_")
-   '(verbatim . "=lorem="))
-  "AList of object types and examples.")
+   '(timestamp . "<2014-08-14 Do 20:53>"))
+  "AList 2 of object types and examples.")
 
 ;;; Functions
 ;;;; Core Functions
 
-(defun* org-dp-create (elem-type &optional contents insert-p &rest args &allow-other-keys)
+(defun* org-dp-create (elem-type &optional contents insert-p &rest args)
   "Create Org element, maybe insert at point."
   (let* ((type (or elem-type 'headline))
 	 (cont (if (consp contents)
 		   contents
-		 ;; FIXME enclose in paragraph?
-		 (list 'section nil `(paragraph nil ,contents))))
+		 (list 'section nil contents)))
 	 (strg (org-element-interpret-data
- 	       (list type args cont))))
+		(cons type (cons (car args) (list cont))))))
     (if insert-p (insert strg) strg)))
 
 ;; TODO check and delete
@@ -211,7 +218,7 @@
 ;; `nil', `append' or `prepend', it can be given as a nested list
 ;; too, in form of the elements parse-tree.
 
-(defun* org-dp-rewire (elem-type &optional element contents replace affiliated &rest args &allow-other-keys)
+(defun* org-dp-rewire (elem-type &optional element contents replace affiliated &rest args)
   "Rewire element-at-point or ELEMENT (if given).
 
 If CONTENT is non-nil, act conditional on its value:
@@ -322,7 +329,7 @@ properties inside of the lambda expression."
 			plist)
 		       (t plist))
 		      (if (stringp cont)
-			  (list 'section nil `(paragraph nil ,cont))
+			  (cons 'section `(nil ,cont))
 			cont))))
     (case replace
       (append (save-excursion (goto-char end) (insert strg)))
@@ -367,7 +374,9 @@ If INTERPRET-P is non-nil, call `org-element-interpret-data' on
 return value. Call `org-no-properties' on result if
 NO-PROPERTIES-P is non-nil too."
   (let* ((elem (cond
-		((symbolp element) (eval element))
+		((and (not (booleanp element))
+		      (symbolp element))
+		 (eval element))
 		((stringp element)
 		 (let ((el (car (read-from-string element))))
 		   (when (consp el) el)))
@@ -693,33 +702,98 @@ prompt the user for additional header-args."
 
 (defun org-dp-lorem-ipsum (&optional number-of-entries)
   "Create random Org document with N entries.
-Use  NUMBER-OF-ENTRIES if given, otherwise set N to 10."
+Use NUMBER-OF-ENTRIES if given, otherwise set N to 10."
+  (interactive
+   (when current-prefix-arg
+     (list (read-number "Number of entries: " 100))))
   (let ((N (or number-of-entries 10))
 	(elems org-dp-interpreted-keys-alist)
-	(objs org-dp-lorem-objects)
 	last-level level rnd strg)
     (with-current-buffer (get-buffer-create "*Org Lorem Ipsum*")
       (dotimes (i N strg)
+	;; get random number between 1 and 100
 	(setq rnd (1+ (random 100)))
+	;; calc headline level based on last level
 	(setq level (case last-level
-			   (1 (if (< rnd 51) 1 2))
-			   ((number-sequence 2 7)
-			    (cond
-			     ((< rnd 26) (1- last-level))
-			     ((< rnd 51) last-level)
-			     ((< rnd 76) (1+ last-level))
-			     (t 1)))
-			   (8 (cond
-			       ((< rnd 34) 7)
-			       ((< rnd 68) 8)
-			       (t 1)))
-			   (t 1)))
+		      (1 (if (< rnd 51) 1 2))
+		      ((number-sequence 2 7)
+		       (cond
+			((< rnd 26) (1- last-level))
+			((< rnd 51) last-level)
+			((< rnd 76) (1+ last-level))
+			(t 1)))
+		      (8 (cond
+			  ((< rnd 34) 7)
+			  ((< rnd 68) 8)
+			  (t 1)))
+		      (t 1)))
+	;; create new headline
 	(org-dp-create
-	 
-	 (if (< rnd 50) )
-		       
-	 
-	 )))))
+	 ;; default type 'headline
+	 nil
+	 ;; maybe create contents
+	 (when (< rnd 51)
+	   (let ((cont (nth (random (length elems)) elems)))
+	     ;; fix "contained only" elements
+	     (case (car cont)
+	       (item (setq cont (assoc 'plain-list elems)))
+	       (node-property (setq cont
+				    (assoc 'property-drawer elems)))
+	       (table-row (setq cont (assoc 'table elems))))
+	     (if (eq (car cont) 'section)
+		 ;; section only
+		 (org-dp--calc-val (cdr cont))
+	       ;; create section with element
+	       (org-dp-create
+		'section
+		;; create element
+		(apply
+		 'org-dp-create
+		 (car cont)
+		 (org-dp--calc-val
+		  (cdr-safe (assoc 'contents (cdr cont))))
+		 nil
+		 (org-dp--calc-args (cdr cont)))))))
+	 ;; insert headline
+	 'INSERT-P
+	 ;; set headline's property list
+	 (org-dp--calc-args
+	  (cdr (assoc 'headline elems)) level))))))
+
+(defun org-dp--calc-val (val)
+  "Select or calc example value from VAL."
+  (let ((objs org-dp-lorem-objects-1))
+    (cond
+     ((and (stringp val)
+	   (string-match "%s" val))
+      (format val (cdr (nth (random (length objs)) objs))))
+     ((and (consp val)
+	   (functionp (car val))
+	   (eval val)))
+     ((consp val) (nth (random (length val)) val))
+     ((and (not (booleanp val))
+	   (symbolp val)
+	   (let ((symval (symbol-value val)))
+	     (if (consp symval)
+		 (nth (random (length symval)) symval)
+	       symval))))
+     (t val))))
+
+(defun org-dp--calc-args (lst &optional level)
+  "Select or calc args from LST.
+Optional arg LEVEL allows to set pre-calculated headline-levels."
+  (let (return-lst)
+    (while (delq (assoc 'contents lst) lst)
+      (let ((--arg (pop lst)))
+	(setq return-lst
+	      (append (list (car --arg))
+		      (list (or
+			     (and (eq (car --arg) :level) level)
+			     (org-dp--calc-val (cdr --arg))))
+		      return-lst))))
+    (message "Return list: %s" return-lst)
+    return-lst))
+		
 
 (defun org-dp-toggle-headers (&optional action)
   "Toggle header argument representation.
