@@ -86,37 +86,77 @@
    '(drawer . ((:drawer-name . (make-temp-name "drawer"))
 	       (contents . "%s ipsum")))
    '(dynamic-block . ((:block-name . (make-temp-name "dynblock"))
-		      (:arguments
-		       . ":format \"on %m%d%Y at %H:%M\"")
+		      (:arguments . nil)
 		      (contents . "%s ipsum")))
    '(footnote-definition . ((:label . (make-temp-name "fn-def"))
 			    (contents . "%s ipsum")))
    '(headline . ((:level . (1 2 3 4 5 6 7 8))
-		 (:todo-keyword . org-todo-keywords-for-agenda)
-		 (:priority . (?A ?B ?C))
-		 (:title . "headline %s")
-		 (:archivedp . (t nil))
+		 (:todo-keyword
+		  . ("TODO" "NEXT" "WAITING" "DONE" nil nil nil))
+		 (:priority
+		  . (?A ?B ?C nil nil nil nil nil nil nil nil nil))
+		 (:title . (format
+			    "headline %s"
+			    (let* ((stamp
+				    (cdr
+				     (assoc
+				      'timestamp
+				      org-dp-lorem-objects-2)))
+				   (cookie
+				    (cdr (assoc
+					  'statistics-cookie
+					  org-dp-lorem-objects-2)))
+				   (lst
+				    (list stamp stamp stamp stamp
+					  stamp stamp cookie ""
+					  "" "" "" "" "" "")))
+			      (nth (random (length lst)) lst))))
+		 (:archivedp
+		  . (t nil nil nil nil nil nil nil nil nil nil nil))
 		 (:tags
-		  . (("home" "office") ("home") ("office") ()))
-		 (:commentedp . (t nil))
-		 (:pre-blank . (1 2 nil))
-		 (:footnote-section-p . (t nil))
+		  . (("home" "office") ("home") ("office") nil nil))
+		 (:commentedp
+		  . (t nil nil nil nil nil nil nil nil nil nil nil))
+		 (:pre-blank . (1 1 1 1 1 1 1 1 1 1 1 1 2 nil))
+		 (:footnote-section-p
+		  . (t nil nil nil nil nil nil nil nil nil nil nil))
 		 (contents . "%s ipsum")))
    '(inline-task . ((:level . (1 2 3 4 5 6 7 8))
 		    (:todo-keyword
-		     . org-todo-keyword-alist-for-agenda)
-		    (:priority . (?A ?B ?C))
-		    (:title . "headline %s")
+		     . ("TODO" "NEXT" "WAITING" "DONE" nil nil nil))
+		    (:priority
+		     . (?A ?B ?C nil nil nil nil nil nil nil nil nil))
+		    (:title . (format
+			       "headline %s"
+			       (let* ((stamp
+				       (cdr
+					(assoc
+					 'timestamp
+					 org-dp-lorem-objects-2)))
+				      (cookie
+				       (cdr (assoc
+					     'statistics-cookie
+					     org-dp-lorem-objects-2)))
+				      (lst
+				       (list stamp stamp stamp stamp
+					     stamp stamp cookie ""
+					     "" "" "" "" "" "")))
+				 (nth (random (length lst)) lst))))
 		    (:tags
-		     . (("home" "office") ("home") ("office") ()))
+		     . (("home" "office") ("home") ("office")
+			nil nil))
 		    (contents . "%s ipsum")))
    '(item . ((:bullet . ("-" "+"))
 	     (:checkbox . "[ ]")
 	     (:counter . nil)
 	     (:tag . (make-temp-name "item"))
 	     (contents . "%s ipsum")))
-   '(plain-list . ((contents . "%s ipsum")))
-   '(property-drawer . ((contents ."%s ipsum")))
+   '(plain-list . ((contents . (concat
+				" - lorem :: ipsum\n"
+				" - dolor :: sit\n"))))
+   '(property-drawer . ((contents .(concat
+				    " :lorem: ipsum\n"
+				    " :dolo: sit\n"))))
    '(quote-block . ((contents . "%s ipsum")))
    '(section . ((contents . "%s ipsum")))
    '(special-block . ((:type . ("LATEX" "HTML" "ORG"))
@@ -129,11 +169,11 @@
    '(comment-block . ((:value . "%s ipsum")))
    '(diary-sexp . ((:value
 		    ."%%(org-anniversary 1956 5 14) A.D %dy old" )))
-   '(example-block . ((:switches . ("-n -r" "-n" "-r" ""))
+   '(example-block . ((:switches . ("-n -r" "-n" "-r" "" "" "" ""))
 		      (:preserve-intent . (1 nil)) ; FIXME number?
 		      (:value . "%s ipsum")))
    '(fixed-width . ((:value . "%s ipsum")))
-   '(horizontal-rule . ("-----"))
+   '(horizontal-rule . (("-----")))
    '(keyword . ((:key . "TODO")
 		(:value . "TODO | DONE")))
    ;; '(keyword . ((:key . (make-temp-name "kw"))
@@ -150,7 +190,7 @@
 				(lambda (--lang)
 				  (symbol-name (car --lang)))
 				org-babel-load-languages))
-		  (:switches . ("-n -r" "-n" "-r" ""))
+		  (:switches . ("-n -r" "-n" "-r" "" "" "" "" ""))
 		  (:parameters . ":var x=5 :results raw")
 		  (:value . "x")
 		  (:preserve-indent . (1 nil)))) ; FIXME number?
@@ -202,7 +242,7 @@
   (let* ((type (or elem-type 'headline))
 	 (cont (if (consp contents)
 		   contents
-		 (list 'section nil contents)))
+		 (list 'section nil (or contents ""))))
 	 (strg (org-element-interpret-data
 		(cons type (cons (car args) (list cont))))))
     (if insert-p (insert strg) strg)))
@@ -358,9 +398,6 @@ properties inside of the lambda expression."
 	   ;;   ;; 	      (ignore-errors (symbol-value element)))
 	   ;;   )
 	   )))))
-
-
-
 
 
 (defun org-dp-map ()
@@ -700,6 +737,7 @@ prompt the user for additional header-args."
 	(set-marker marker nil))
     (call-interactively 'tj/wrap-in-block)))
 
+;; FIXME not yet working!
 (defun org-dp-lorem-ipsum (&optional number-of-entries)
   "Create random Org document with N entries.
 Use NUMBER-OF-ENTRIES if given, otherwise set N to 10."
@@ -732,11 +770,13 @@ Use NUMBER-OF-ENTRIES if given, otherwise set N to 10."
 	 ;; default type 'headline
 	 nil
 	 ;; maybe create contents
-	 (when (< rnd 51)
+	 (when (< rnd 101)
 	   (let ((cont (nth (random (length elems)) elems)))
 	     ;; fix "contained only" elements
 	     (case (car cont)
 	       (item (setq cont (assoc 'plain-list elems)))
+	       (horizontal-line
+		(setq cont (assoc 'headline elems)))
 	       (node-property (setq cont
 				    (assoc 'property-drawer elems)))
 	       (table-row (setq cont (assoc 'table elems))))
@@ -782,9 +822,10 @@ Use NUMBER-OF-ENTRIES if given, otherwise set N to 10."
 (defun org-dp--calc-args (lst &optional level)
   "Select or calc args from LST.
 Optional arg LEVEL allows to set pre-calculated headline-levels."
-  (let (return-lst)
-    (while (delq (assoc 'contents lst) lst)
-      (let ((--arg (pop lst)))
+  (let ((return-lst)
+	(arg-lst (delq (assoc 'contents lst) lst)))
+    (while arg-lst
+      (let ((--arg (pop arg-lst)))
 	(setq return-lst
 	      (append (list (car --arg))
 		      (list (or
