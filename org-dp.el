@@ -61,10 +61,6 @@
 
 ;;  - `org-dp-contents' :: get content of (local) element
 
-;; The utility commands included in the library are not part of the
-;; library but rather application examples. They can safely be moved
-;; to more appropriate places.
-
 ;;; Requires
 
 (require 'cl)
@@ -107,8 +103,7 @@
    '(scr-block . (:language :switches :parameters :value
 			    :preserve-indent))
    '(table . (:type :value :tblfm))
-   '(table-row . (:type contents))
-   '(quote-block . (contents)))
+   '(table-row . (:type contents)))
   "AList of elements and their interpreted properties.")
 
 (defconst org-dp-affiliated-keys
@@ -135,7 +130,7 @@
 (defun* org-dp-rewire (elem-type &optional contents replace affiliated element &rest args)
   "Rewire element-at-point or ELEMENT (if given).
 
-If CONTENT is non-nil, act conditional on its value:
+If CONTENTS is non-nil, act conditional on its value:
 
  - string or internal representation (parse-tree) :: use
       raw/interpreted value as rewired element's contents.
@@ -202,12 +197,13 @@ properties inside of the lambda expression."
 		(org-element-property :post-affiliated elem)))
 	 (end (set-marker
 	       (make-marker) (org-element-property :end elem)))
-	 (cont (cond
-		((and (consp contents) (functionp contents))
-		 (apply 'contents (list elem)))
-		((and contents (booleanp contents))
-		 (org-dp-contents elem))
-		(t contents)))
+	 (cont (let ((orig-elem-cont (org-dp-contents elem)))
+		 (cond
+		  ((and (consp contents) (functionp contents))
+		   (apply contents (list orig-elem-cont elem)))
+		  ((and contents (booleanp contents))
+		   orig-elem-cont)
+		  (t contents))))
 	 strg)
     (while args
       (let* ((key (pop args))
@@ -268,7 +264,6 @@ properties inside of the lambda expression."
 ;; `nil', `append' or `prepend', it can be given as a nested list
 ;; too, in form of the elements parse-tree.
 
-
   ;; (let* ((orig-elem (cond
   ;; 		     ((and (not (booleanp elem-type))
   ;; 			   (symbolp elem-type)
@@ -282,7 +277,6 @@ properties inside of the lambda expression."
   ;; 		     (t (org-element-at-point))))
   ;; 	 (type (or (ignore-errors (org-element-type orig-elem))
   ;; 		   elem-type))
-
 
 	   ;; (message "Before:\nsym: %s\nsym-name: %s\nsym-val: %s\n"
 	   ;; 	    element
