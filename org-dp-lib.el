@@ -292,35 +292,17 @@ prompt the user for additional header-args."
 			    (t nil))))
 		      t))))
 		 (user-error "Unwrapped block content."))
-
-		   ;; (let* ((parsed-block (org-element-at-point))
-		   ;; 	  (type (org-element-type parsed-block))
-		   ;; 	  (val-or-cont
-		   ;; 	   (if (or
-		   ;; 		(eq type 'verse-block)
-		   ;; 		(memq type
-		   ;; 		      org-element-greater-elements))
-		   ;; 	       (org-dp-contents parsed-block t)
-		   ;; 	     (org-element-property :value
-		   ;; 				   parsed-block))))
-		   ;;   (insert
-		   ;;    (org-element-paragraph-interpreter
-		   ;;     (org-dp-rewire parsed-block t nil nil
-		   ;; 			  :type 'paragraph)
-		   ;;     val-or-cont)))
-		   ;; (user-error "Unwrapped block content.")))
 		;; replace surrounding block
 		((y-or-n-p "Replace surrounding block ")
 		 (save-excursion
 		   (goto-char (or (car dblock-limits)
 				  src-block-beg
 				  (car block-limits)))
-		   (let* ((parsed-block
-			   (org-element-at-point))
-			  (type (org-element-type parsed-block)))
+		   (let ((user-info
+			  (org-dp-prompt))))
 		     (org-dp-rewire parsed-block t nil nil
 					;; TODO prompt user!
-					:type 'paragraph))
+					:type 'paragraph)
 		   (user-error "Replaced surrounding block.")))
 		 ;; ;; src-blocks
 		 ;; (if parsed-src-block

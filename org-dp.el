@@ -392,50 +392,95 @@ specifies the Org Babel language."
 	       header-args))))
     (list :language lang :header header-args)))
 
-(defun org-dp-prompt (elem-type &optional contents replace affiliated &rest args)
+(defun org-dp-prompt (&optional elem-lst)
   "Prompt user for arguments.
+Optional arg ELEM-LST, if given, is a subset of
+`org-element-all-elements'.
 Return list consists of the following elements:
-  (elem-type contents replace affiliated args)"
-  (interactive
-   (let* ((elem-type (intern (org-completing-read
-			      "Element type (symbol): "
-			      (mapcar
-			       'symbol-name
-			       org-element-all-elements))))
-	  (contents (when (memq 'contents
-				(cdr
-				 (assoc
-				  elem-type
-				  org-dp-elem-props)))
-		      (read-string "Contents (string): ")))
-	  (replace (org-completing-read
-		    "Replace? "
-		    (mapcar
-		     'symbol-name
-		     '(nil t append prepend))))
-	  affiliated args)
-     (while (y-or-n-p "Affiliated keyword ")
-       (setq affiliated
-	     (cons			      
-	      (org-completing-read
-	       "Key: "
-	       (append (list (format "%s" nil))
-		       (list (format "%s" t))
-		       (mapcar
-			'symbol-name
-			org-dp-affiliated-keys)))
-	      affiliated)))
-     (let ((arglst (delq 'contents
-			 (cdr
-			  (assoc elem-type org-dp-elem-props)))))
-       (while arglst
-	 (setq args
-	       (cons
-		(read-string
-		 (format "%s " (pop arglst)))
-		args))))
-     (list elem-type contents replace affiliated args)))
-   (list elem-type contents (intern replace) affiliated args))
+ (elem-type contents replace affiliated args)"
+  (interactive)
+  (let* ((elem-type (intern (org-completing-read
+			     "Element type (symbol): "
+			     (mapcar
+			      'symbol-name
+			      (or elem-lst
+				  org-element-all-elements)))))
+	 (contents (when (memq 'contents
+			       (cdr
+				(assoc
+				 elem-type
+				 org-dp-elem-props)))
+		     (read-string "Contents (string): ")))
+	 (replace (org-completing-read
+		   "Replace? "
+		   (mapcar
+		    'symbol-name
+		    '(nil t append prepend))))
+	 (arglst (delq 'contents
+		       (cdr (assoc elem-type org-dp-elem-props))))
+	 affiliated args)
+    (let ((branch (org-completing-read
+		   "With affiliated keywords "
+		   '("nil" "t" "list"))))
+      (if (member branch '("nil" "t"))
+	  (setq affiliated (intern branch))
+	(while (y-or-n-p "Add keyword ")
+	  (setq affiliated
+		(cons
+		 (org-completing-read
+		  "Key: " (mapcar 'symbol-name
+				  org-dp-affiliated-keys))
+		 affiliated)))))
+    (while arglst
+      (setq args (cons (read-string
+			(format "%s " (pop arglst))) args)))
+    (list elem-type contents (intern replace) affiliated args)))
+
+;; (defun org-dp-prompt (elem-type &optional contents replace affiliated elem-lst &rest args)
+;;   "Prompt user for arguments.
+;; Return list consists of the following elements:
+;;   (elem-type contents replace affiliated args)"
+;;   (interactive
+;;    (let* ((elem-type (intern (org-completing-read
+;; 			      "Element type (symbol): "
+;; 			      (mapcar
+;; 			       'symbol-name
+;; 			       (or elem-lst
+;; 				   org-element-all-elements)))))
+;; 	  (contents (when (memq 'contents
+;; 				(cdr
+;; 				 (assoc
+;; 				  elem-type
+;; 				  org-dp-elem-props)))
+;; 		      (read-string "Contents (string): ")))
+;; 	  (replace (org-completing-read
+;; 		    "Replace? "
+;; 		    (mapcar
+;; 		     'symbol-name
+;; 		     '(nil t append prepend))))
+;; 	  affiliated args)
+;;      (while (y-or-n-p "Affiliated keyword ")
+;;        (setq affiliated
+;; 	     (cons			      
+;; 	      (org-completing-read
+;; 	       "Key: "
+;; 	       (append (list (format "%s" nil))
+;; 		       (list (format "%s" t))
+;; 		       (mapcar
+;; 			'symbol-name
+;; 			org-dp-affiliated-keys)))
+;; 	      affiliated)))
+;;      (let ((arglst (delq 'contents
+;; 			 (cdr
+;; 			  (assoc elem-type org-dp-elem-props)))))
+;;        (while arglst
+;; 	 (setq args
+;; 	       (cons
+;; 		(read-string
+;; 		 (format "%s " (pop arglst)))
+;; 		args))))
+;;      (list elem-type contents replace affiliated args)))
+;;    (list elem-type contents (intern replace) affiliated args))
 
 
      ;; (ido-read-block-type '(ido-completing-read
