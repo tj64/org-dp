@@ -100,7 +100,7 @@
    '(node-property . (:key :value))
    '(paragraph . (contents))
    '(planning . (:deadline :scheduled :closed))
-   '(scr-block . (:language :switches :parameters :value
+   '(src-block . (:language :switches :parameters :value
 			    :preserve-indent))
    '(table . (:type :value :tblfm))
    '(table-row . (:type contents)))
@@ -360,7 +360,7 @@ specifies the Org Babel language."
 		   org-babel-common-header-args-w-values
 		   (when (boundp lang-headers)
 		     (eval lang-headers))))
-	 header-args)
+	 (header-args ""))
     (while (y-or-n-p "Add arg ")
       (let* ((key (org-icompleting-read
 		   "Header Arg: "
@@ -370,7 +370,7 @@ specifies the Org Babel language."
 		    headers)))
 	     (vals (cdr (assoc (intern key) headers))))
 	(setq header-args
-	      (cons
+	      (concat
 	       (format
 		":%s %s"
 		key
@@ -389,18 +389,77 @@ specifies the Org Babel language."
 				(not (string= "default" arg)))
 			   arg "")))
 		   vals ""))))
+	       (if (org-string-nw-p header-args) " " "")
 	       header-args))))
-    (list :language lang :header header-args)))
+    (list :language lang :parameters header-args)))
 
-(defun org-dp-prompt (&optional elem-lst)
+;; (defun org-dp-prompt-for-src-block-props (lang)
+;;   "Prompt for src-block header argument.
+;; Select from lists of common args and values. Argument LANG
+;; specifies the Org Babel language."
+;;   (interactive
+;;    (list (org-icompleting-read
+;; 	  "Lang: "
+;; 	  (mapcar #'symbol-name
+;; 		  (delete-dups
+;; 		   (append (mapcar #'car
+;; 				   org-babel-load-languages)
+;; 			   (mapcar
+;; 			    (lambda (el) (intern (car el)))
+;; 			    org-src-lang-modes)))))))
+;;   (let* ((lang-headers (intern
+;; 			(concat "org-babel-header-args:" lang)))
+;; 	 (headers (org-babel-combine-header-arg-lists
+;; 		   org-babel-common-header-args-w-values
+;; 		   (when (boundp lang-headers)
+;; 		     (eval lang-headers))))
+;; 	 header-args)
+;;     (while (y-or-n-p "Add arg ")
+;;       (let* ((key (org-icompleting-read
+;; 		   "Header Arg: "
+;; 		   (mapcar
+;; 		    (lambda (header-spec)
+;; 		      (symbol-name (car header-spec)))
+;; 		    headers)))
+;; 	     (vals (cdr (assoc (intern key) headers))))
+;; 	(setq header-args
+;; 	      (cons
+;; 	       (format
+;; 		":%s %s"
+;; 		key
+;; 		(cond
+;; 		 ((eq vals :any)
+;; 		  (read-from-minibuffer "value: "))
+;; 		 ((listp vals)
+;; 		  (mapconcat
+;; 		   (lambda (group)
+;; 		     (let ((arg (org-icompleting-read
+;; 				 "Value: "
+;; 				 (cons "default"
+;; 				       (mapcar #'symbol-name
+;; 					       group)))))
+;; 		       (if (and arg
+;; 				(not (string= "default" arg)))
+;; 			   arg "")))
+;; 		   vals ""))))
+;; 	       header-args))))
+;;     (list :language lang :header header-args)))
+
+(defun org-dp-prompt (&optional elem elem-lst)
   "Prompt user for arguments.
+
+Optional arg ELEM, if given, is the parse-tree of an Org element,
+used to derive default values when prompting the user.
+
 Optional arg ELEM-LST, if given, is a subset of
-`org-element-all-elements'.
+`org-element-all-elements' used for completing-read functions.
+
 Return list consists of the following elements:
+
  (elem-type contents replace affiliated args)"
   (interactive)
   (let* ((elem-type (intern (org-completing-read
-			     "Element type (symbol): "
+			     "Element type: "
 			     (mapcar
 			      'symbol-name
 			      (or elem-lst
@@ -410,14 +469,25 @@ Return list consists of the following elements:
 				(assoc
 				 elem-type
 				 org-dp-elem-props)))
-		     (read-string "Contents (string): ")))
-	 (replace (org-completing-read
-		   "Replace? "
-		   (mapcar
-		    'symbol-name
-		    '(nil t append prepend))))
-	 (arglst (delq 'contents
-		       (cdr (assoc elem-type org-dp-elem-props))))
+		     (read-string
+		      "Contents (string): "
+		      nil nil
+		      (when (and elem
+				 (y-or-n-p "Use default value "))
+			(if (memq 'contents
+				  (cdr
+				   (assoc
+				    (org-element-type elem)
+				    org-dp-elem-props)))
+			    (org-dp-contents elem t)
+			  (org-element-property :value elem))))))
+	 (replace (intern (org-completing-read
+			   "Replace? "
+			   (mapcar
+			    'symbol-name
+			    '(nil t append prepend)))))
+	 (arglst (delete 'contents
+			 (cdr (assoc elem-type org-dp-elem-props))))
 	 affiliated args)
     (let ((branch (org-completing-read
 		   "With affiliated keywords "
@@ -426,16 +496,66 @@ Return list consists of the following elements:
 	  (setq affiliated (intern branch))
 	(while (y-or-n-p "Add keyword ")
 	  (setq affiliated
+		(remove-duplicates
+		 (cons
+		  (org-completing-read
+		   "Key: " (mapcar 'symbol-name
+				   org-dp-affiliated-keys))
+		  affiliated))))))
+    (when (eq elem-type 'src-block)
+      (mapc
+       (lambda (--key) (setq arglst (delq --key arglst)))
+       (list :language :parameters))
+      (if (and elem
+	       (eq (org-element-type elem) 'src-block)
+	       (y-or-n-p "Src-block params: use default values "))
+	  (setq args
 		(cons
-		 (org-completing-read
-		  "Key: " (mapcar 'symbol-name
-				  org-dp-affiliated-keys))
-		 affiliated)))))
+		 (list
+		  :language (org-element-property :language elem)
+		  ;; :header (org-element-property :header elem)
+		  :paramters (org-element-property
+			      :parameters elem))
+		 args))
+	(when (y-or-n-p "Provide src-block params ")
+	  (setq args
+		(cons
+		 (call-interactively
+		  'org-dp-prompt-for-src-block-props)
+		 args)))))
     (while arglst
-      (setq args (cons (read-string
-			(format "%s " (pop arglst))) args)))
-    (list elem-type contents (intern replace) affiliated args)))
+      (let ((--prop (pop arglst)))
+	(setq args
+	      (append
+	       (list
+		--prop
+		 (if (and elem
+			  (memq --prop
+				(cdr
+				 (assoc
+				  (org-element-type elem)
+				  org-dp-elem-props)))
+			  (y-or-n-p
+			   (format "%s - use default value "
+				   --prop)))
+		     (org-element-property --prop elem)
+		   (read-string (format "%s " --prop))))
+	       ;; FIXME
+	       (or (car-safe args) args)))))
+    (message "return: %s"
+	     (list elem-type contents replace affiliated args))
+    (list elem-type contents replace affiliated args)))
 
+;; org-element--interpret-affiliated-keywords: Wrong type argument: symbolp, (:preserve-indent nil . :value)
+
+;; #+name myblock
+;; #+header: :results raw
+;; #+begin_src emacs-lisp
+;;  (+ 2 2)
+;; #+end_src
+
+
+;; TODO delete
 ;; (defun org-dp-prompt (elem-type &optional contents replace affiliated elem-lst &rest args)
 ;;   "Prompt user for arguments.
 ;; Return list consists of the following elements:

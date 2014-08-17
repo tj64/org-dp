@@ -298,12 +298,23 @@ prompt the user for additional header-args."
 		   (goto-char (or (car dblock-limits)
 				  src-block-beg
 				  (car block-limits)))
-		   (let ((user-info
-			  (org-dp-prompt))))
-		     (org-dp-rewire parsed-block t nil nil
-					;; TODO prompt user!
-					:type 'paragraph)
-		   (user-error "Replaced surrounding block.")))
+		   (let* ((elem-at-pt (copy-list
+				       (org-element-at-point))) 
+			  (user-info
+			  (org-dp-prompt
+			   elem-at-pt			   
+			   '(src-block dynamic-block center-block
+				       quote-block special-block
+				       comment-block
+				       example-block))))
+		     (org-dp-rewire (nth 0 user-info)
+				    (nth 1 user-info)
+				    (nth 2 user-info)
+				    (nth 3 user-info)
+				    elem-at-pt
+				    (nth 4 user-info))))
+		   (user-error "Replaced surrounding block."))
+;; (list elem-type contents (intern replace) affiliated args)
 		 ;; ;; src-blocks
 		 ;; (if parsed-src-block
 		 ;;     (progn
@@ -774,7 +785,7 @@ them all :header or :parameter values repectively."
 					   (pop params)
 					   (pop params))
 				   headers)))
-		    (append headers _old_)))))
+		    (remove-duplicates (append headers _old_))))))
       ;; convert :header args to :parameters
       (param
        (org-dp-rewire
