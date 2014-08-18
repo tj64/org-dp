@@ -291,7 +291,7 @@ prompt the user for additional header-args."
 			     (org-element-property :value elem))
 			    (t nil))))
 		      t))))
-		 (user-error "Unwrapped block content."))
+		 (user-error "Block content unwrapped."))
 		;; replace surrounding block
 		((y-or-n-p "Replace surrounding block ")
 		 (save-excursion
@@ -307,13 +307,14 @@ prompt the user for additional header-args."
 				       quote-block special-block
 				       comment-block
 				       example-block))))
-		     (org-dp-rewire (nth 0 user-info)
-				    (nth 1 user-info)
-				    (nth 2 user-info)
-				    (nth 3 user-info)
-				    elem-at-pt
-				    (nth 4 user-info))))
-		   (user-error "Replaced surrounding block."))
+		     (apply 'org-dp-rewire
+			    (nth 0 user-info)
+			    (nth 1 user-info)
+			    (nth 2 user-info)
+			    (nth 3 user-info)
+			    elem-at-pt
+			    (nth 4 user-info))))
+		   (user-error "Surrounding block replaced."))
 ;; (list elem-type contents (intern replace) affiliated args)
 		 ;; ;; src-blocks
 		 ;; (if parsed-src-block

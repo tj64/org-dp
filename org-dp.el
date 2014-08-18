@@ -109,8 +109,18 @@
 (defconst org-dp-affiliated-keys
   (list :caption :data :header :headers :label :name :plot :resname
 	:result :results :source :srcname :tblname)
-  "List of `org-element-affiliated-keywords' as downcased
-    keywords.")
+  "List of all `org-element-affiliated-keywords' as downcased
+    keywords, including deprecated old keywords that are mapped
+    to new keywords in `org-element-keyword-translation-alist'.")
+
+(defconst org-dp-single-keys
+  (list :name :plot :results)
+  "Selection of new downcased keywords from
+  `org-element-affiliated-keywords'.")
+
+(defconst org-dp-multiple-keys
+  (list :caption :header)
+  "New downcased keywords from `org-element-multiple-keywords'.")
 
 ;;; Functions
 ;;;; Core Functions
@@ -143,7 +153,7 @@ If CONTENTS is non-nil, act conditional on its value:
 
  - t :: (boolean) get interpreted contents of original element.
 
-Act conditional on value of REPLACE:
+If REPLACE is non-nil, act conditional on its value:
 
  - append :: (symbol) append rewired element after original element
 
@@ -153,12 +163,10 @@ Act conditional on value of REPLACE:
 
  - nil :: just return rewired element
 
-Act conditional on value of AFFILIATED:
+If AFFILIATED is non-nil, act conditional on its value:
 
- - list of keywords :: (consp) properties of the original element
-      whose keys are member (memq) of this list (of downcased
-      keywords from `org-element-affiliated-keywords') are
-      retained in the rewired element.
+ - property list :: (consp) combine element's property list with
+                    this plist of affiliated keywords
 
  - non-nil :: (any) all affiliated keywords are retained in
               rewired element.
@@ -169,15 +177,15 @@ Act conditional on value of AFFILIATED:
 ELEM-TYPE is one of the types in `org-element-all-elements'. If
 it is nil, the element type of the original element is used. ARGS
 is a plist consisting of key-val pairs of all other keyword
-arguments given.
+arguments given, defining the (rewired) element's properties.
 
 The former value of an element property can be reused in the
-creation of a new value by giving a `lambda' expession with two
-function arguments instead of a value to a key. The first
-argument will then be replaced by the property's former value
-when applying the function. The second argument should be the
-parsed element itself, enabling access to its type and all its
-properties inside of the lambda expression."
+creation of a new value by giving a `lambda' expession or
+function taking two arguments (instead of just a value) to a
+key. The first argument will then be replaced by the property's
+former value when applying the function. The second argument
+should be the parsed element itself, enabling access to its type
+and all its properties inside of the lambda expression."
   (let* ((orig-elem (cond
 		     ((and (not (booleanp element))
 			   (symbolp element))
@@ -218,15 +226,16 @@ properties inside of the lambda expression."
 		(list (or type (org-element-type elem))
 		      (cond
 		       ((consp affiliated)
-			(mapcar
-			 (lambda (--aff-kw)
-			   (setq plist (plist-put
-					plist --aff-kw nil)))
-			 (intersection plist
-				       (set-difference
-					org-dp-affiliated-keys
-					affiliated)))
-			plist)
+			(org-combine-plists plist affiliated))
+			;; (mapcar
+			;;  (lambda (--aff-kw)
+			;;    (setq plist (plist-put
+			;; 		plist --aff-kw nil)))
+			;;  (intersection plist
+			;; 	       (set-difference
+			;; 		org-dp-affiliated-keys
+			;; 		affiliated)))
+			;; plist)
 		       ((not affiliated)
 			(mapcar
 			 (lambda (--aff-kw)
@@ -388,7 +397,7 @@ specifies the Org Babel language."
 		       (if (and arg
 				(not (string= "default" arg)))
 			   arg "")))
-		   vals ""))))
+		   vals " "))))
 	       (if (org-string-nw-p header-args) " " "")
 	       header-args))))
     (list :language lang :parameters header-args)))
@@ -445,105 +454,199 @@ specifies the Org Babel language."
 ;; 	       header-args))))
 ;;     (list :language lang :header header-args)))
 
-(defun org-dp-prompt (&optional elem elem-lst)
+(defun* org-dp-prompt (&optional elem elem-lst &key noprompt-cont noprompt-val noprompt-replace noprompt-affiliated noprompt-src-block noprompt-args)
   "Prompt user for arguments.
 
 Optional arg ELEM, if given, is the parse-tree of an Org element,
 used to derive default values when prompting the user.
 
 Optional arg ELEM-LST, if given, is a subset of
-`org-element-all-elements' used for completing-read functions.
+`org-element-all-elements' used for completing-read functions. If
+only an atomic symbol is given, that element type is used without
+prompting the user.
 
-Return list consists of the following elements:
+If any of the
+
+ NOPROMPT-{CONT|VAL|REPLACE|AFFILIATED|SRC-BLOCK|ARGS}
+
+keyword arguments is given, it should either be t, meaning that
+prompting the user for that argument will be suppressed and its
+value will be nil, or an adecuate type that can be set as the
+arguments value:
+
+ - cont :: string
+
+ - val :: string
+
+ - replace :: string (will be interned)
+
+ - affiliated :: plist
+
+ - src-block :: plist
+
+ - args :: plist
+
+The function's return list consists of the following elements:
 
  (elem-type contents replace affiliated args)"
   (interactive)
-  (let* ((elem-type (intern (org-completing-read
-			     "Element type: "
-			     (mapcar
-			      'symbol-name
-			      (or elem-lst
-				  org-element-all-elements)))))
+  (let* ((elem-type (cond
+		     ((and (not (booleanp elem-lst))
+			   (symbolp elem-lst)
+			   (memq elem-lst org-element-all-elements))
+		      elem-lst)
+		     ((list elem-lst)
+		      (intern (org-completing-read
+			       "Element type: "
+			       (mapcar
+				'symbol-name
+				(or elem-lst
+				    org-element-all-elements)))))
+		     (t (user-error
+			 "Not a symbol or list (of elements): %s"
+			 elem-lst))))
 	 (contents (when (memq 'contents
-			       (cdr
-				(assoc
-				 elem-type
-				 org-dp-elem-props)))
-		     (read-string
-		      "Contents (string): "
-		      nil nil
-		      (when (and elem
-				 (y-or-n-p "Use default value "))
-			(if (memq 'contents
-				  (cdr
-				   (assoc
-				    (org-element-type elem)
-				    org-dp-elem-props)))
-			    (org-dp-contents elem t)
-			  (org-element-property :value elem))))))
-	 (replace (intern (org-completing-read
+			       (cdr (assoc elem-type
+					   org-dp-elem-props)))
+		     (cond
+		      (noprompt-cont
+		       (org-string-nw-p noprompt-cont))
+		      ((and elem
+			    (y-or-n-p
+			     "Contents - use default value "))
+		       (if (memq 'contents
+				 (cdr
+				  (assoc
+				   (org-element-type elem)
+				   org-dp-elem-props)))
+			   (org-dp-contents elem t)
+			 (org-element-property :value elem)))
+		       (t (read-string "Contents: ")))))
+	 (value (when (memq :value
+			    (cdr (assoc elem-type
+					org-dp-elem-props)))
+		     (cond
+		      (noprompt-val
+		       (org-string-nw-p noprompt-val))
+		      ((and elem
+			    (y-or-n-p
+			     "Value - use default "))
+		       (if (memq :value
+				 (cdr
+				  (assoc
+				   (org-element-type elem)
+				   org-dp-elem-props)))
+			   (org-element-property :value elem)
+			 (or contents
+			     (org-dp-contents elem t))))
+		       (t (read-string "Value: ")))))
+	 (replace (if noprompt-replace
+		       (intern (org-string-nw-p noprompt-replace))
+		    (intern (org-completing-read
 			   "Replace? "
-			   (mapcar
-			    'symbol-name
-			    '(nil t append prepend)))))
+			   (mapcar 'symbol-name
+				   '(nil t append prepend))))))
 	 (arglst (delete 'contents
 			 (cdr (assoc elem-type org-dp-elem-props))))
 	 affiliated args)
-    (let ((branch (org-completing-read
-		   "With affiliated keywords "
-		   '("nil" "t" "list"))))
-      (if (member branch '("nil" "t"))
-	  (setq affiliated (intern branch))
-	(while (y-or-n-p "Add keyword ")
-	  (setq affiliated
-		(remove-duplicates
-		 (cons
-		  (org-completing-read
-		   "Key: " (mapcar 'symbol-name
-				   org-dp-affiliated-keys))
-		  affiliated))))))
-    (when (eq elem-type 'src-block)
-      (mapc
-       (lambda (--key) (setq arglst (delq --key arglst)))
-       (list :language :parameters))
-      (if (and elem
-	       (eq (org-element-type elem) 'src-block)
-	       (y-or-n-p "Src-block params: use default values "))
+    ;; get affiliated keywords
+    (if noprompt-affiliated
+	(when (consp noprompt-affiliated)
+	  (setq affiliated noprompt-affiliated))
+      (let ((branch (org-completing-read
+		     "With affiliated keywords "
+		     '("nil" "t" "list"))))
+	(if (member branch '("nil" "t"))
+	    (setq affiliated (intern branch))
+	  (mapc
+	   (lambda (--aff-key)
+	     (if (and (org-element-property --aff-key elem)
+		      (y-or-n-p (format "%s - use default value "
+				   --aff-key)))
+		 (setq affiliated
+		       (append
+			(list --aff-key
+			      (org-element-property --aff-key elem))
+			affiliated))
+	       (setq affiliated
+		     (append
+		      (list --aff-key
+			    (if (memq --aff-key
+				      org-dp-multiple-keys)
+				(while (y-or-n-p
+					(format "%s - add value "
+						--aff-key))
+				  (let (accum)
+				    (setq
+				     accum
+				     (cons
+				      (read-string
+				       (format "%s " --aff-key))
+				      accum))))
+			      (read-string (format "%s "
+						   --aff-key))))
+		      affiliated))))
+	   (union org-dp-single-keys org-dp-multiple-keys)))))
+    ;; get src-block parameters
+    (if noprompt-src-block
+	(when (consp noprompt-src-block)
+	  (setq args noprompt-src-block))
+      (when (eq elem-type 'src-block)
+	(mapc
+	 (lambda (--key) (setq arglst (delq --key arglst)))
+	 (list :language :parameters))
+	(if (and elem
+		 (eq (org-element-type elem) 'src-block)
+		 (y-or-n-p
+		  "Src-block params - use default values "))
+	    (setq args
+		  ;; (cons
+		  (append
+		   (list
+		    :language (org-element-property :language elem)
+		    :paramters (org-element-property
+				:parameters elem))
+		   args))
+	  (when (y-or-n-p "Provide src-block params ")
+	    (setq args
+		  (append
+		  ;; (cons
+		   (call-interactively
+		    'org-dp-prompt-for-src-block-props)
+		   args))))))
+    ;; get element properties
+    (if noprompt-args
+	(when (consp noprompt-args)
+	  (setq args (cons noprompt-args args)))
+      ;; maybe un-nest args plist (hack)
+      (when (and args (consp (car args)))
+	(setq args (car args)))
+      ;; special case value 
+      (when (and value
+		 (memq :value (cdr (assoc (org-element-type elem)
+					  org-dp-elem-props))))
+	(delq :value arglst)
+	(setq args (plist-put args :value value)))
+      (while arglst
+	(let ((--prop (pop arglst)))
 	  (setq args
-		(cons
+		(append
 		 (list
-		  :language (org-element-property :language elem)
-		  ;; :header (org-element-property :header elem)
-		  :paramters (org-element-property
-			      :parameters elem))
-		 args))
-	(when (y-or-n-p "Provide src-block params ")
-	  (setq args
-		(cons
-		 (call-interactively
-		  'org-dp-prompt-for-src-block-props)
+		  --prop
+		  (if (and elem
+			   (memq --prop
+				 (cdr
+				  (assoc
+				   (org-element-type elem)
+				   org-dp-elem-props)))
+			   (y-or-n-p
+			    (format "%s - use default value "
+				    --prop)))
+		      (org-element-property --prop elem)
+		    (read-string (format "%s " --prop))))
 		 args)))))
-    (while arglst
-      (let ((--prop (pop arglst)))
-	(setq args
-	      (append
-	       (list
-		--prop
-		 (if (and elem
-			  (memq --prop
-				(cdr
-				 (assoc
-				  (org-element-type elem)
-				  org-dp-elem-props)))
-			  (y-or-n-p
-			   (format "%s - use default value "
-				   --prop)))
-		     (org-element-property --prop elem)
-		   (read-string (format "%s " --prop))))
-	       ;; FIXME
-	       (or (car-safe args) args)))))
-    (message "return: %s"
-	     (list elem-type contents replace affiliated args))
+    ;; (message "return: %s"
+    ;; 	     (list elem-type contents replace affiliated args))
     (list elem-type contents replace affiliated args)))
 
 ;; org-element--interpret-affiliated-keywords: Wrong type argument: symbolp, (:preserve-indent nil . :value)
