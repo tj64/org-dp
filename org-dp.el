@@ -92,7 +92,7 @@
    '(comment . (:value))
    '(comment-block . (:value))
    '(diary-sexp . (:value))
-   '(example-block . (:switches :preserve-intent :value))
+   '(example-block . (:switches :preserve-indent :value))
    '(fixed-width . (:value))
    '(horizontal-rule . nil)
    '(keyword . (:key :value))
@@ -119,8 +119,16 @@
   `org-element-affiliated-keywords'.")
 
 (defconst org-dp-multiple-keys
-  (list :caption :header)
+  (list :header :caption)
   "New downcased keywords from `org-element-multiple-keywords'.")
+
+(defconst org-dp-parsed-keys
+  (list :caption)
+  "New downcased keywords from `org-element-parsed-keywords'.")
+
+(defconst org-dp-dual-keys
+  (list :caption :results)
+  "New downcased keywords from `org-element-dual-keywords'.")
 
 ;;; Functions
 ;;;; Core Functions
@@ -419,34 +427,39 @@ The function's return list consists of the following elements:
 				   org-dp-elem-props)))
 			   (org-dp-contents elem t)
 			 (org-element-property :value elem)))
-		       (t (read-string "Contents: ")))))
+		      (t (read-string "Contents: ")))))
 	 (value (when (memq :value
 			    (cdr (assoc elem-type
 					org-dp-elem-props)))
-		     (cond
-		      (noprompt-val
-		       (org-string-nw-p noprompt-val))
-		      ((and elem
-			    (y-or-n-p
-			     "Value - use default "))
-		       (if (memq :value
-				 (cdr
-				  (assoc
-				   (org-element-type elem)
-				   org-dp-elem-props)))
-			   (org-element-property :value elem)
-			 (or contents
-			     (org-dp-contents elem t))))
-		       (t (read-string "Value: ")))))
+		  (cond
+		   (noprompt-val
+		    (org-string-nw-p noprompt-val))
+		   ((and elem
+			 (y-or-n-p
+			  ":value - use default "))
+		    (if (memq :value
+			      (cdr
+			       (assoc
+				(org-element-type elem)
+				org-dp-elem-props)))
+			(org-element-property :value elem)
+		      (or contents
+			  (org-dp-contents elem t))))
+		   (t (read-string "Value: ")))))
 	 (replace (if noprompt-replace
-		       (intern (org-string-nw-p noprompt-replace))
+		      (intern (org-string-nw-p noprompt-replace))
 		    (intern (org-completing-read
-			   "Replace? "
-			   (mapcar 'symbol-name
-				   '(nil t append prepend))))))
-	 (arglst (delete 'contents
+			     "Replace? "
+			     (mapcar 'symbol-name
+				     '(nil t append prepend))))))
+	 (arglst (remove 'contents
 			 (cdr (assoc elem-type org-dp-elem-props))))
 	 affiliated args)
+    (message
+     (concat
+      "elem-type: %s\n contents: %s\n value: %s\n replace: %s\n"
+      " arglst: %s")
+     elem-type contents value replace arglst)
     ;; get affiliated keywords
     (if noprompt-affiliated
 	(when (consp noprompt-affiliated)
@@ -460,30 +473,61 @@ The function's return list consists of the following elements:
 	   (lambda (--aff-key)
 	     (if (and (org-element-property --aff-key elem)
 		      (y-or-n-p (format "%s - use default value "
-				   --aff-key)))
+					--aff-key)))
 		 (setq affiliated
 		       (append
 			(list --aff-key
 			      (org-element-property --aff-key elem))
 			affiliated))
-	       (setq affiliated
-		     (append
-		      (list --aff-key
-			    (if (memq --aff-key
-				      org-dp-multiple-keys)
-				(let (accum)
-				  (while (y-or-n-p
-					  (format "%s - add value "
-						  --aff-key))
-				    (setq accum
-					  (cons (read-string
-						 (format "%s "
-							 --aff-key))
-						accum))))
-			      (read-string (format "%s "
-						   --aff-key))))
-		      affiliated))))
-	   (union org-dp-single-keys org-dp-multiple-keys)))))
+	       (setq
+		affiliated
+		(append
+		 (list
+		  --aff-key
+		  (cond
+		   ((memq --aff-key
+			  (intersection org-dp-multiple-keys
+					org-dp-dual-keys))
+		    (let (accum)
+		      (while (y-or-n-p
+			      (format "%s - add value " --aff-key))
+			(setq accum
+			      (cons
+				(cons
+				 (org-string-nw-p
+				  (read-string
+				   (format " %s value "
+					   --aff-key)))
+				  (org-string-nw-p
+				  (read-string
+				   (format " %s dual "
+					   --aff-key))))
+			       accum)))
+		      accum))
+		   ((memq --aff-key org-dp-multiple-keys)
+		    (let (accum)
+		      (while (y-or-n-p
+			      (format "%s - add value " --aff-key))
+			(setq accum
+			      (cons (read-string
+				     (format "%s " --aff-key))
+				    accum)))
+		      (if (consp accum)
+			  accum
+			(org-string-nw-p accum))))
+		   ((memq --aff-key org-dp-dual-keys)
+		    (cons (org-string-nw-p
+			   (read-string
+			    (format " %s value " --aff-key)))
+			  (org-string-nw-p
+			   (read-string
+			    (format " %s dual " --aff-key)))))
+		   (t (org-string-nw-p
+		       (read-string (format "%s " --aff-key))))))
+		 affiliated))))
+	   (union org-dp-single-keys
+		  (append org-dp-multiple-keys
+			  org-dp-parsed-keys))))))
     ;; get src-block parameters
     (if noprompt-src-block
 	(when (consp noprompt-src-block)
@@ -502,12 +546,12 @@ The function's return list consists of the following elements:
 		   (list
 		    :language (org-element-property :language elem)
 		    :parameters (org-element-property
-				:parameters elem))
+				 :parameters elem))
 		   args))
 	  (when (y-or-n-p "Provide src-block params ")
 	    (setq args
 		  (append
-		  ;; (cons
+		   ;; (cons
 		   (call-interactively
 		    'org-dp-prompt-for-src-block-props)
 		   args))))))
