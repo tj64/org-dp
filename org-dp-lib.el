@@ -183,45 +183,7 @@
    '(timestamp . "<2014-08-14 Do 20:53>"))
   "AList 2 of object types and examples.")
 
-;;; Functions
-;;;; Random Org Elements
-
-(defun org-dp--calc-val (val)
-  "Select or calc example value from VAL."
-  (let ((objs org-dp-lorem-objects-1))
-    (cond
-     ((and (stringp val)
-	   (string-match "%s" val))
-      (format val (cdr (nth (random (length objs)) objs))))
-     ((and (consp val)
-	   (functionp (car val))
-	   (eval val)))
-     ((consp val) (nth (random (length val)) val))
-     ((and (not (booleanp val))
-	   (symbolp val)
-	   (let ((symval (symbol-value val)))
-	     (if (consp symval)
-		 (nth (random (length symval)) symval)
-	       symval))))
-     (t val))))
-
-(defun org-dp--calc-args (lst &optional level)
-  "Select or calc args from LST.
-Optional arg LEVEL allows to set pre-calculated headline-levels."
-  (let ((return-lst)
-	(arg-lst (delq (assoc 'contents lst) lst)))
-    (while arg-lst
-      (let ((--arg (pop arg-lst)))
-	(setq return-lst
-	      (append (list (car --arg))
-		      (list (or
-			     (and (eq (car --arg) :level) level)
-			     (org-dp--calc-val (cdr --arg))))
-		      return-lst))))
-    (message "Return list: %s" return-lst)
-    return-lst))
-		
-;;; Commands
+;;; Functions and Commands
 ;;;; Wrap in Block
 
 (defun org-dp-wrap-in-block (&optional type lines &rest headers)
@@ -661,70 +623,6 @@ prompt the user for additional header-args."
 ;; 	(set-marker marker nil))
 ;;     (call-interactively 'tj/wrap-in-block)))
 
-;;;; Create Random Org Buffer
-
-;; FIXME not yet working!
-(defun org-dp-lorem-ipsum (&optional number-of-entries)
-  "Create random Org document with N entries.
-Use NUMBER-OF-ENTRIES if given, otherwise set N to 10."
-  (interactive
-   (when current-prefix-arg
-     (list (read-number "Number of entries: " 100))))
-  (let ((N (or number-of-entries 10))
-	(elems org-dp-interpreted-keys-alist)
-	last-level level rnd strg)
-    (with-current-buffer (get-buffer-create "*Org Lorem Ipsum*")
-      (dotimes (i N strg)
-	;; get random number between 1 and 100
-	(setq rnd (1+ (random 100)))
-	;; calc headline level based on last level
-	(setq level (case last-level
-		      (1 (if (< rnd 51) 1 2))
-		      ((number-sequence 2 7)
-		       (cond
-			((< rnd 26) (1- last-level))
-			((< rnd 51) last-level)
-			((< rnd 76) (1+ last-level))
-			(t 1)))
-		      (8 (cond
-			  ((< rnd 34) 7)
-			  ((< rnd 68) 8)
-			  (t 1)))
-		      (t 1)))
-	;; create new headline
-	(org-dp-create
-	 ;; default type 'headline
-	 nil
-	 ;; maybe create contents
-	 (when (< rnd 101)
-	   (let ((cont (nth (random (length elems)) elems)))
-	     ;; fix "contained only" elements
-	     (case (car cont)
-	       (item (setq cont (assoc 'plain-list elems)))
-	       (horizontal-line
-		(setq cont (assoc 'headline elems)))
-	       (node-property (setq cont
-				    (assoc 'property-drawer elems)))
-	       (table-row (setq cont (assoc 'table elems))))
-	     (if (eq (car cont) 'section)
-		 ;; section only
-		 (org-dp--calc-val (cdr cont))
-	       ;; create section with element
-	       (org-dp-create
-		'section
-		;; create element
-		(apply
-		 'org-dp-create
-		 (car cont)
-		 (org-dp--calc-val
-		  (cdr-safe (assoc 'contents (cdr cont))))
-		 nil
-		 (org-dp--calc-args (cdr cont)))))))
-	 ;; insert headline
-	 'INSERT-P
-	 ;; set headline's property list
-	 (org-dp--calc-args
-	  (cdr (assoc 'headline elems)) level))))))
 
 ;;;; Toggle Src-Block Headers
 
@@ -801,6 +699,106 @@ them all :header or :parameter values repectively."
 		       (or (org-string-nw-p _old_) "")))
 	:header nil))
       (t (error "Not a valid action: %s" act)))))
+
+;;;; Create Random Org Buffer
+
+(defun org-dp--calc-val (val)
+  "Select or calc example value from VAL."
+  (let ((objs org-dp-lorem-objects-1))
+    (cond
+     ((and (stringp val)
+	   (string-match "%s" val))
+      (format val (cdr (nth (random (length objs)) objs))))
+     ((and (consp val)
+	   (functionp (car val))
+	   (eval val)))
+     ((consp val) (nth (random (length val)) val))
+     ((and (not (booleanp val))
+	   (symbolp val)
+	   (let ((symval (symbol-value val)))
+	     (if (consp symval)
+		 (nth (random (length symval)) symval)
+	       symval))))
+     (t val))))
+
+(defun org-dp--calc-args (lst &optional level)
+  "Select or calc args from LST.
+Optional arg LEVEL allows to set pre-calculated headline-levels."
+  (let ((return-lst)
+	(arg-lst (delq (assoc 'contents lst) lst)))
+    (while arg-lst
+      (let ((--arg (pop arg-lst)))
+	(setq return-lst
+	      (append (list (car --arg))
+		      (list (or
+			     (and (eq (car --arg) :level) level)
+			     (org-dp--calc-val (cdr --arg))))
+		      return-lst))))
+    (message "Return list: %s" return-lst)
+    return-lst))
+		
+;; FIXME not yet working!
+(defun org-dp-lorem-ipsum (&optional number-of-entries)
+  "Create random Org document with N entries.
+Use NUMBER-OF-ENTRIES if given, otherwise set N to 10."
+  (interactive
+   (when current-prefix-arg
+     (list (read-number "Number of entries: " 100))))
+  (let ((N (or number-of-entries 10))
+	(elems org-dp-interpreted-keys-alist)
+	last-level level rnd strg)
+    (with-current-buffer (get-buffer-create "*Org Lorem Ipsum*")
+      (dotimes (i N strg)
+	;; get random number between 1 and 100
+	(setq rnd (1+ (random 100)))
+	;; calc headline level based on last level
+	(setq level (case last-level
+		      (1 (if (< rnd 51) 1 2))
+		      ((number-sequence 2 7)
+		       (cond
+			((< rnd 26) (1- last-level))
+			((< rnd 51) last-level)
+			((< rnd 76) (1+ last-level))
+			(t 1)))
+		      (8 (cond
+			  ((< rnd 34) 7)
+			  ((< rnd 68) 8)
+			  (t 1)))
+		      (t 1)))
+	;; create new headline
+	(org-dp-create
+	 ;; default type 'headline
+	 nil
+	 ;; maybe create contents
+	 (when (< rnd 101)
+	   (let ((cont (nth (random (length elems)) elems)))
+	     ;; fix "contained only" elements
+	     (case (car cont)
+	       (item (setq cont (assoc 'plain-list elems)))
+	       (horizontal-line
+		(setq cont (assoc 'headline elems)))
+	       (node-property (setq cont
+				    (assoc 'property-drawer elems)))
+	       (table-row (setq cont (assoc 'table elems))))
+	     (if (eq (car cont) 'section)
+		 ;; section only
+		 (org-dp--calc-val (cdr cont))
+	       ;; create section with element
+	       (org-dp-create
+		'section
+		;; create element
+		(apply
+		 'org-dp-create
+		 (car cont)
+		 (org-dp--calc-val
+		  (cdr-safe (assoc 'contents (cdr cont))))
+		 nil
+		 (org-dp--calc-args (cdr cont)))))))
+	 ;; insert headline
+	 'INSERT-P
+	 ;; set headline's property list
+	 (org-dp--calc-args
+	  (cdr (assoc 'headline elems)) level))))))
 
 ;;; Run Hooks and Provide
 ;;; org-dp-lib.el ends here

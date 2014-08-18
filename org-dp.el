@@ -227,15 +227,6 @@ and all its properties inside of the lambda expression."
 		      (cond
 		       ((consp affiliated)
 			(org-combine-plists plist affiliated))
-			;; (mapcar
-			;;  (lambda (--aff-kw)
-			;;    (setq plist (plist-put
-			;; 		plist --aff-kw nil)))
-			;;  (intersection plist
-			;; 	       (set-difference
-			;; 		org-dp-affiliated-keys
-			;; 		affiliated)))
-			;; plist)
 		       ((not affiliated)
 			(mapcar
 			 (lambda (--aff-kw)
@@ -260,48 +251,6 @@ and all its properties inside of the lambda expression."
 	   (set-marker end nil)
 	   (save-excursion (insert strg))
 	   )))))
-
-
-;; TODO check and delete
-;; Note that, if ELEMENT is given and should be replaced, it *must*
-;; be a quoted (!) symbol with an Org element's parse-tree as
-;; value. This is because after rewiring a parsed *and* assigned Org
-;; element its location properties like `:begin', `:end' and
-;; `post-affiliated' might have changed and must be updated by
-;; parsing the rewired and inserted element-at-point
-;; again. Otherwise, if ELEMENT is given and REPLACE is either
-;; `nil', `append' or `prepend', it can be given as a nested list
-;; too, in form of the elements parse-tree.
-
-  ;; (let* ((orig-elem (cond
-  ;; 		     ((and (not (booleanp elem-type))
-  ;; 			   (symbolp elem-type)
-  ;; 			   (not (memq elem-type
-  ;; 				      org-element-all-elements)))
-  ;; 		      (eval elem-type))
-  ;; 		     ((stringp elem-type)
-  ;; 		      (let ((el (car (read-from-string elem-type))))
-  ;; 			(when (consp el) el)))
-  ;; 		     ((consp elem-type) elem-type)
-  ;; 		     (t (org-element-at-point))))
-  ;; 	 (type (or (ignore-errors (org-element-type orig-elem))
-  ;; 		   elem-type))
-
-	   ;; (message "Before:\nsym: %s\nsym-name: %s\nsym-val: %s\n"
-	   ;; 	    element
-	   ;; 	    (ignore-errors (symbol-name element))
-	   ;; 	    (ignore-errors (symbol-value element)))
-	   ;; (if (and element (not (symbolp element)))
-	   ;;     (user-error
-	   ;; 	 "Argument ELEMENT not a quoted symbol:\n%s"
-	   ;; 	 element)
-	   ;;   (set element (org-element-at-point))
-	   ;;   ;; (message
-	   ;;   ;;  "After:\nsym: %s\nsym-name: %s\nsym-val: %s\n"
-	   ;;   ;; 	      element
-	   ;;   ;; 	      (ignore-errors (symbol-name element))
-	   ;;   ;; 	      (ignore-errors (symbol-value element)))
-	   ;;   )
 
 
 (defun org-dp-map ()
@@ -402,57 +351,6 @@ specifies the Org Babel language."
 	       header-args))))
     (list :language lang :parameters header-args)))
 
-;; (defun org-dp-prompt-for-src-block-props (lang)
-;;   "Prompt for src-block header argument.
-;; Select from lists of common args and values. Argument LANG
-;; specifies the Org Babel language."
-;;   (interactive
-;;    (list (org-icompleting-read
-;; 	  "Lang: "
-;; 	  (mapcar #'symbol-name
-;; 		  (delete-dups
-;; 		   (append (mapcar #'car
-;; 				   org-babel-load-languages)
-;; 			   (mapcar
-;; 			    (lambda (el) (intern (car el)))
-;; 			    org-src-lang-modes)))))))
-;;   (let* ((lang-headers (intern
-;; 			(concat "org-babel-header-args:" lang)))
-;; 	 (headers (org-babel-combine-header-arg-lists
-;; 		   org-babel-common-header-args-w-values
-;; 		   (when (boundp lang-headers)
-;; 		     (eval lang-headers))))
-;; 	 header-args)
-;;     (while (y-or-n-p "Add arg ")
-;;       (let* ((key (org-icompleting-read
-;; 		   "Header Arg: "
-;; 		   (mapcar
-;; 		    (lambda (header-spec)
-;; 		      (symbol-name (car header-spec)))
-;; 		    headers)))
-;; 	     (vals (cdr (assoc (intern key) headers))))
-;; 	(setq header-args
-;; 	      (cons
-;; 	       (format
-;; 		":%s %s"
-;; 		key
-;; 		(cond
-;; 		 ((eq vals :any)
-;; 		  (read-from-minibuffer "value: "))
-;; 		 ((listp vals)
-;; 		  (mapconcat
-;; 		   (lambda (group)
-;; 		     (let ((arg (org-icompleting-read
-;; 				 "Value: "
-;; 				 (cons "default"
-;; 				       (mapcar #'symbol-name
-;; 					       group)))))
-;; 		       (if (and arg
-;; 				(not (string= "default" arg)))
-;; 			   arg "")))
-;; 		   vals ""))))
-;; 	       header-args))))
-;;     (list :language lang :header header-args)))
 
 (defun* org-dp-prompt (&optional elem elem-lst &key noprompt-cont noprompt-val noprompt-replace noprompt-affiliated noprompt-src-block noprompt-args)
   "Prompt user for arguments.
@@ -573,16 +471,15 @@ The function's return list consists of the following elements:
 		      (list --aff-key
 			    (if (memq --aff-key
 				      org-dp-multiple-keys)
-				(while (y-or-n-p
-					(format "%s - add value "
-						--aff-key))
-				  (let (accum)
-				    (setq
-				     accum
-				     (cons
-				      (read-string
-				       (format "%s " --aff-key))
-				      accum))))
+				(let (accum)
+				  (while (y-or-n-p
+					  (format "%s - add value "
+						  --aff-key))
+				    (setq accum
+					  (cons (read-string
+						 (format "%s "
+							 --aff-key))
+						accum))))
 			      (read-string (format "%s "
 						   --aff-key))))
 		      affiliated))))
@@ -604,7 +501,7 @@ The function's return list consists of the following elements:
 		  (append
 		   (list
 		    :language (org-element-property :language elem)
-		    :paramters (org-element-property
+		    :parameters (org-element-property
 				:parameters elem))
 		   args))
 	  (when (y-or-n-p "Provide src-block params ")
@@ -622,9 +519,7 @@ The function's return list consists of the following elements:
       (when (and args (consp (car args)))
 	(setq args (car args)))
       ;; special case value 
-      (when (and value
-		 (memq :value (cdr (assoc (org-element-type elem)
-					  org-dp-elem-props))))
+      (when value
 	(delq :value arglst)
 	(setq args (plist-put args :value value)))
       (while arglst
@@ -645,84 +540,9 @@ The function's return list consists of the following elements:
 		      (org-element-property --prop elem)
 		    (read-string (format "%s " --prop))))
 		 args)))))
-    ;; (message "return: %s"
-    ;; 	     (list elem-type contents replace affiliated args))
+    (message "return: %s"
+    	     (list elem-type contents replace affiliated args))
     (list elem-type contents replace affiliated args)))
-
-;; org-element--interpret-affiliated-keywords: Wrong type argument: symbolp, (:preserve-indent nil . :value)
-
-;; #+name myblock
-;; #+header: :results raw
-;; #+begin_src emacs-lisp
-;;  (+ 2 2)
-;; #+end_src
-
-
-;; TODO delete
-;; (defun org-dp-prompt (elem-type &optional contents replace affiliated elem-lst &rest args)
-;;   "Prompt user for arguments.
-;; Return list consists of the following elements:
-;;   (elem-type contents replace affiliated args)"
-;;   (interactive
-;;    (let* ((elem-type (intern (org-completing-read
-;; 			      "Element type (symbol): "
-;; 			      (mapcar
-;; 			       'symbol-name
-;; 			       (or elem-lst
-;; 				   org-element-all-elements)))))
-;; 	  (contents (when (memq 'contents
-;; 				(cdr
-;; 				 (assoc
-;; 				  elem-type
-;; 				  org-dp-elem-props)))
-;; 		      (read-string "Contents (string): ")))
-;; 	  (replace (org-completing-read
-;; 		    "Replace? "
-;; 		    (mapcar
-;; 		     'symbol-name
-;; 		     '(nil t append prepend))))
-;; 	  affiliated args)
-;;      (while (y-or-n-p "Affiliated keyword ")
-;;        (setq affiliated
-;; 	     (cons			      
-;; 	      (org-completing-read
-;; 	       "Key: "
-;; 	       (append (list (format "%s" nil))
-;; 		       (list (format "%s" t))
-;; 		       (mapcar
-;; 			'symbol-name
-;; 			org-dp-affiliated-keys)))
-;; 	      affiliated)))
-;;      (let ((arglst (delq 'contents
-;; 			 (cdr
-;; 			  (assoc elem-type org-dp-elem-props)))))
-;;        (while arglst
-;; 	 (setq args
-;; 	       (cons
-;; 		(read-string
-;; 		 (format "%s " (pop arglst)))
-;; 		args))))
-;;      (list elem-type contents replace affiliated args)))
-;;    (list elem-type contents (intern replace) affiliated args))
-
-
-     ;; (ido-read-block-type '(ido-completing-read
-     ;; 			 "Block Type: " all-types
-     ;; 			 nil nil nil nil "emacs-lisp"))
-     ;; (ido-read-headers '(while (y-or-n-p "Add header ")
-     ;; 		       (cons
-     ;; 			(ido-completing-read
-     ;; 			 "arg: "
-     ;; 			 (mapcar
-     ;; 			  'symbol-name
-     ;; 			  org-babel-header-arg-names)
-     ;; 			 nil nil nil nil "var")
-     ;; 			(read-string "value: "))))
-     ;; (read-dyn-params '(while (y-or-n-p "Add parameter ")
-     ;; 		      (cons
-     ;; 		       (read-string "param: ")
-     ;; 		       (read-string "value: ")))))
-
 
 
 ;;; Run Hooks and Provide
