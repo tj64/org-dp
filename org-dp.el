@@ -567,15 +567,17 @@ The function's return list consists of the following elements:
 		      (if (consp accum)
 			  accum
 			(org-string-nw-p accum))))
-		   ;; FIXME empty #+results: header displayed
 		   ((memq --aff-key org-dp-dual-keys)
-		    (let ((val (org-string-nw-p
+		    (let* ((val (org-string-nw-p
 				(read-string
 				 (format " %s value " --aff-key))))
-			  (dual (org-string-nw-p
-				 (read-string
-				  (format " %s dual " --aff-key)))))
-		      (and val dual (cons val dual))))
+			  (dual (when val
+				  (org-string-nw-p
+				   (read-string
+				    (format " %s dual "
+					    --aff-key))))))
+		      (and val (cons val dual))))
+		      ;; (and val dual (cons val dual))))
 		   (t (org-string-nw-p
 		       (read-string (format "%s " --aff-key))))))
 		 affiliated))))
