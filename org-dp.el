@@ -45,7 +45,7 @@
 
 ;;;; Usage
 
-;; This library introduces 3 'public' functions
+;; This library introduces a few 'public' functions
 
 ;;  - `org-dp-create' :: create a new Org element by building its
 ;;       internal representation
@@ -56,10 +56,25 @@
 ;;  - `org-dp-map' :: map elements in a buffer and 'rewire' them (not
 ;;                    yet implemented)
 
+;; and 1 command as generic UI
 
-;; and 1 'private' function
+;;  - `org-dp-prompt' :: universal function for getting user info
+
+;; The following more 'private' functions and commands are used by the
+;; core/UI functions, but might be useful by themselves
 
 ;;  - `org-dp-contents' :: get content of (local) element
+
+;;  - `org-dp-in' :: return position-info if inside element, nil
+;;                    otherwise (not yet implemented)
+
+;;  - `org-dp-prompt-for-src-block-props' :: prompt user for src-block
+;;       properties (adapted from ob-core.el)
+
+;; Note that the src-block parameters are appended to the src-block's
+;; headline. If you rather want them as separate #+header: lines on
+;; top of the src-block you can use `org-dp-toggle-headers' from
+;; org-dp-lib.el for swapping headers and parameters.
 
 ;;; Requires
 
@@ -134,25 +149,58 @@
   (list :caption :results)
   "New downcased keywords from `org-element-dual-keywords'.")
 
+;;;; Customs
+
+;;;;; Custom Groups
+
+(defgroup org-dp nil
+  "Declarative Programming with Org Elements."
+  :prefix "org-dp"
+  :group 'lisp
+  :link '(url-link "https://github.com/tj64/org-dp"))
+
+;;;;; Custom Vars
+
+;; (defcustom org-dp-default-babel-lang "emacs-lisp"
+;;   "Default Babel language used for new src-blocks."
+;;   :group 'org-dp
+;;   :type 'string)
+
 ;;; Functions
 ;;;; Core Functions
 
 (defun* org-dp-create (elem-type &optional contents insert-p affiliated &rest args)
   "Create Org element, maybe insert at point."
   (let* ((type (or elem-type 'headline))
-	 (value-block-p (memq type org-dp-value-blocks))
-	 (cont (if (consp contents)
-		     contents
-		   (list 'section nil (or contents ""))))
-	 (val (when value-block-p (list :value contents)))
+	 (val (when (memq type org-dp-value-blocks)
+		(list :value contents)))
+	 ;; FIXME kind of a hack (really necessary?)
+	 (pproc-args (cond
+		      ((and (consp (car args))
+			    (consp (caar args)))
+		       (caar args))
+		      ((consp (car args)) (car args))
+		      (t args)))
 	 (strg (org-element-interpret-data
-		(append (list type)
-			(list
-			 (if value-block-p
-			     (org-combine-plists
-			      (append (caar args) affiliated) val)
-			   (append (caar args) affiliated)))
-			(list cont)))))
+		(list type
+		      (cond
+		       ((consp affiliated) (org-combine-plists
+					    pproc-args affiliated
+					    val))
+		       ((not affiliated)
+			(mapcar
+			 (lambda (--aff-kw)
+			   (setq pproc-args
+				 (plist-put pproc-args
+					    --aff-kw nil)))
+			 (intersection pproc-args
+				       org-dp-affiliated-keys))
+			(org-combine-plists pproc-args val))
+		       (t (org-combine-plists pproc-args val)))
+		      (unless val
+			(if (stringp contents)
+			    (cons 'section `(nil ,contents))
+			  contents))))))
     (if insert-p (insert strg) strg)))
 
 (defun* org-dp-rewire (elem-type &optional contents replace affiliated element &rest args)
@@ -589,7 +637,6 @@ The function's return list consists of the following elements:
 		    (read-string (format "%s " --prop))))
 		 args)))))
     (list elem-type contents replace affiliated args)))
-
 
 ;;; Run Hooks and Provide
 
