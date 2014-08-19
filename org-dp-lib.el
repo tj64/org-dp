@@ -25,165 +25,9 @@
 
 (require 'org-dp)
 
-;;; Variables
-;;;; Vars
-;;;; Consts
+;;; Utilities
 
-(defconst org-dp-interpreted-keys-alist
-  (list
-   '(center-block . ((contents . "%s ipsum")))
-   '(drawer . ((:drawer-name . (make-temp-name "drawer"))
-	       (contents . "%s ipsum")))
-   '(dynamic-block . ((:block-name . (make-temp-name "dynblock"))
-		      (:arguments . nil)
-		      (contents . "%s ipsum")))
-   '(footnote-definition . ((:label . (make-temp-name "fn-def"))
-			    (contents . "%s ipsum")))
-   '(headline . ((:level . (1 2 3 4 5 6 7 8))
-		 (:todo-keyword
-		  . ("TODO" "NEXT" "WAITING" "DONE" nil nil nil))
-		 (:priority
-		  . (?A ?B ?C nil nil nil nil nil nil nil nil nil))
-		 (:title . (format
-			    "headline %s"
-			    (let* ((stamp
-				    (cdr
-				     (assoc
-				      'timestamp
-				      org-dp-lorem-objects-2)))
-				   (cookie
-				    (cdr (assoc
-					  'statistics-cookie
-					  org-dp-lorem-objects-2)))
-				   (lst
-				    (list stamp stamp stamp stamp
-					  stamp stamp cookie ""
-					  "" "" "" "" "" "")))
-			      (nth (random (length lst)) lst))))
-		 (:archivedp
-		  . (t nil nil nil nil nil nil nil nil nil nil nil))
-		 (:tags
-		  . (("home" "office") ("home") ("office") nil nil))
-		 (:commentedp
-		  . (t nil nil nil nil nil nil nil nil nil nil nil))
-		 (:pre-blank . (1 1 1 1 1 1 1 1 1 1 1 1 2 nil))
-		 (:footnote-section-p
-		  . (t nil nil nil nil nil nil nil nil nil nil nil))
-		 (contents . "%s ipsum")))
-   '(inline-task . ((:level . (1 2 3 4 5 6 7 8))
-		    (:todo-keyword
-		     . ("TODO" "NEXT" "WAITING" "DONE" nil nil nil))
-		    (:priority
-		     . (?A ?B ?C nil nil nil nil nil nil nil nil nil))
-		    (:title . (format
-			       "headline %s"
-			       (let* ((stamp
-				       (cdr
-					(assoc
-					 'timestamp
-					 org-dp-lorem-objects-2)))
-				      (cookie
-				       (cdr (assoc
-					     'statistics-cookie
-					     org-dp-lorem-objects-2)))
-				      (lst
-				       (list stamp stamp stamp stamp
-					     stamp stamp cookie ""
-					     "" "" "" "" "" "")))
-				 (nth (random (length lst)) lst))))
-		    (:tags
-		     . (("home" "office") ("home") ("office")
-			nil nil))
-		    (contents . "%s ipsum")))
-   '(item . ((:bullet . ("-" "+"))
-	     (:checkbox . "[ ]")
-	     (:counter . nil)
-	     (:tag . (make-temp-name "item"))
-	     (contents . "%s ipsum")))
-   '(plain-list . ((contents . (concat
-				" - lorem :: ipsum\n"
-				" - dolor :: sit\n"))))
-   '(property-drawer . ((contents .(concat
-				    " :lorem: ipsum\n"
-				    " :dolo: sit\n"))))
-   '(quote-block . ((contents . "%s ipsum")))
-   '(section . ((contents . "%s ipsum")))
-   '(special-block . ((:type . ("LATEX" "HTML" "ORG"))
-		      (contents . "%s ipsum")))
-   '(babel-call . ((:value . "%s")))
-   '(clock . ((:value
-	       . "[2014-08-15 Fr 17:17]--[2014-08-15 Fr 17:20]")
-	      (:duration . "0:03")))
-   '(comment . ((:value . "%s ipsum")))
-   '(comment-block . ((:value . "%s ipsum")))
-   '(diary-sexp . ((:value
-		    ."%%(org-anniversary 1956 5 14) A.D %dy old" )))
-   '(example-block . ((:switches . ("-n -r" "-n" "-r" "" "" "" ""))
-		      (:preserve-intent . (1 nil)) ; FIXME number?
-		      (:value . "%s ipsum")))
-   '(fixed-width . ((:value . "%s ipsum")))
-   '(horizontal-rule . (("-----")))
-   '(keyword . ((:key . "TODO")
-		(:value . "TODO | DONE")))
-   ;; '(keyword . ((:key . (make-temp-name "kw"))
-   ;; 	      (:value . (make-temp-name "val"))))
-   '(latex-environment . ((:value . " a=+\sqrt{2} ")))
-   '(node-property . ((:key . (make-temp-name "prop"))
-		      (:value . (make-temp-name "val"))))
-   '(paragraph . ((contents . "%s ipsum")))
-   '(planning . ((:deadline . "<2014-08-15 Fr 22:00>")
-		 (:scheduled
-		  . "<2014-08-15 Fr 20:00>--<2014-08-15 Fr 21:00>")
-		 (:closed . nil)))
-   '(scr-block . ((:language . (mapcar
-				(lambda (--lang)
-				  (symbol-name (car --lang)))
-				org-babel-load-languages))
-		  (:switches . ("-n -r" "-n" "-r" "" "" "" "" ""))
-		  (:parameters . ":var x=5 :results raw")
-		  (:value . "x")
-		  (:preserve-indent . (1 nil)))) ; FIXME number?
-   '(table . ((:type . (org table.el))
-	      (:value . "| %s | ipsum |\n| lorem | ipsum |\n")
-	      (:tblfm . "$5=taylor($2,%4,%3);n3")))
-   '(table-row . ((:type . (rule standard))
-		  (contents . "%s ipsum")))
-   '(quote-block . ((contents . "%s ipsum"))))
-  "AList of elements and their interpreted keywords, with
-  example values.")
-
-(defconst org-dp-lorem-objects-1
-  (list
-   '(bold . "*lorem*")
-   '(code . "~lorem~")
-   '(entity . "\\alpha")
-   '(italic . "/lorem/")
-   '(strike-through . "+lorem+")
-   '(subscript . "_{lorem}")
-   '(superscript . "^{lorem}")
-   '(underline . "_lorem_")
-   '(verbatim . "=lorem="))
-  "AList 1 of object types and examples.")
-
-(defconst org-dp-lorem-objects-2
-  (list
-   '(export-snippet . "@@ascii:lorem@@")
-   '(footnote-reference . "[fn::lorem]")
-   '(inline-babel-call . "call_lorem()")
-   '(inline-src-block . "src_emacs-lisp[:var x=lorem]{x}")
-   '(latex-fragment
-     . "\begin{equation}\nlorem=\sqrt{x}\n\end{equation}")
-   '(line-break . "lorem\\\\\n")
-   '(link-interpreter . "[[http://orgmode.org/][Lorem]]")
-   '(macro . "{{{lorem(arg1, arg2)}}}")
-   '(radio-target . "<<<lorem>>>")
-   '(statistics-cookie . "[33%]")
-   '(table-cell . " lorem |")
-   '(target . "<<lorem>>")
-   '(timestamp . "<2014-08-14 Do 20:53>"))
-  "AList 2 of object types and examples.")
-
-;;; Functions and Commands
+;;; Applications
 ;;;; Wrap in Block
 
 (defun org-dp-wrap-in-block (&optional lines)
@@ -284,6 +128,7 @@ explicitly asked for by user."
 				     comment-block
 				     example-block)
 			 :noprompt-cont t
+			 :noprompt-value t
 			 :noprompt-replace t))
 	     (empty-line (save-match-data
 			   (looking-at "^[[:space:]]*$")))
@@ -301,17 +146,7 @@ explicitly asked for by user."
 		   (empty-line point-at-eol)
 		   (t (save-excursion
 			(forward-sexp) (point)))))
-	     (cut-strg (buffer-substring beg end))
-)
-	     ;; (babel-langs (mapcar
-	     ;; 		   (lambda (--lang)
-	     ;; 		     (symbol-name (car --lang)))
-	     ;; 		   org-babel-load-languages))
-	     ;; (block-names (delete "src"
-	     ;; 			  (mapcar
-	     ;; 			   (lambda (--block)
-	     ;; 			     (downcase (car --block)))
-	     ;; 			   org-element-block-name-alist)))
+	     (cut-strg (buffer-substring beg end)))
 	(delete-region beg end)
 	(goto-char (marker-position marker))
 	(apply 'org-dp-create
@@ -863,6 +698,162 @@ them all :header or :parameter values repectively."
       (t (error "Not a valid action: %s" act)))))
 
 ;;;; Create Random Org Buffer
+
+;;;;; Variables
+
+(defconst org-dp-lorem-objects-1
+  (list
+   '(bold . "*lorem*")
+   '(code . "~lorem~")
+   '(entity . "\\alpha")
+   '(italic . "/lorem/")
+   '(strike-through . "+lorem+")
+   '(subscript . "_{lorem}")
+   '(superscript . "^{lorem}")
+   '(underline . "_lorem_")
+   '(verbatim . "=lorem="))
+  "AList 1 of object types and examples.")
+(defconst org-dp-lorem-objects-2
+  (list
+   '(export-snippet . "@@ascii:lorem@@")
+   '(footnote-reference . "[fn::lorem]")
+   '(inline-babel-call . "call_lorem()")
+   '(inline-src-block . "src_emacs-lisp[:var x=lorem]{x}")
+   '(latex-fragment
+     . "\begin{equation}\nlorem=\sqrt{x}\n\end{equation}")
+   '(line-break . "lorem\\\\\n")
+   '(link-interpreter . "[[http://orgmode.org/][Lorem]]")
+   '(macro . "{{{lorem(arg1, arg2)}}}")
+   '(radio-target . "<<<lorem>>>")
+   '(statistics-cookie . "[33%]")
+   '(table-cell . " lorem |")
+   '(target . "<<lorem>>")
+   '(timestamp . "<2014-08-14 Do 20:53>"))
+  "AList 2 of object types and examples.")
+(defconst org-dp-interpreted-keys-alist
+  (list
+   '(center-block . ((contents . "%s ipsum")))
+   '(drawer . ((:drawer-name . (make-temp-name "drawer"))
+	       (contents . "%s ipsum")))
+   '(dynamic-block . ((:block-name . (make-temp-name "dynblock"))
+		      (:arguments . nil)
+		      (contents . "%s ipsum")))
+   '(footnote-definition . ((:label . (make-temp-name "fn-def"))
+			    (contents . "%s ipsum")))
+   '(headline . ((:level . (1 2 3 4 5 6 7 8))
+		 (:todo-keyword
+		  . ("TODO" "NEXT" "WAITING" "DONE" nil nil nil))
+		 (:priority
+		  . (?A ?B ?C nil nil nil nil nil nil nil nil nil))
+		 (:title . (format
+			    "headline %s"
+			    (let* ((stamp
+				    (cdr
+				     (assoc
+				      'timestamp
+				      org-dp-lorem-objects-2)))
+				   (cookie
+				    (cdr (assoc
+					  'statistics-cookie
+					  org-dp-lorem-objects-2)))
+				   (lst
+				    (list stamp stamp stamp stamp
+					  stamp stamp cookie ""
+					  "" "" "" "" "" "")))
+			      (nth (random (length lst)) lst))))
+		 (:archivedp
+		  . (t nil nil nil nil nil nil nil nil nil nil nil))
+		 (:tags
+		  . (("home" "office") ("home") ("office") nil nil))
+		 (:commentedp
+		  . (t nil nil nil nil nil nil nil nil nil nil nil))
+		 (:pre-blank . (1 1 1 1 1 1 1 1 1 1 1 1 2 nil))
+		 (:footnote-section-p
+		  . (t nil nil nil nil nil nil nil nil nil nil nil))
+		 (contents . "%s ipsum")))
+   '(inline-task . ((:level . (1 2 3 4 5 6 7 8))
+		    (:todo-keyword
+		     . ("TODO" "NEXT" "WAITING" "DONE" nil nil nil))
+		    (:priority
+		     . (?A ?B ?C nil nil nil nil nil nil nil nil nil))
+		    (:title . (format
+			       "headline %s"
+			       (let* ((stamp
+				       (cdr
+					(assoc
+					 'timestamp
+					 org-dp-lorem-objects-2)))
+				      (cookie
+				       (cdr (assoc
+					     'statistics-cookie
+					     org-dp-lorem-objects-2)))
+				      (lst
+				       (list stamp stamp stamp stamp
+					     stamp stamp cookie ""
+					     "" "" "" "" "" "")))
+				 (nth (random (length lst)) lst))))
+		    (:tags
+		     . (("home" "office") ("home") ("office")
+			nil nil))
+		    (contents . "%s ipsum")))
+   '(item . ((:bullet . ("-" "+"))
+	     (:checkbox . "[ ]")
+	     (:counter . nil)
+	     (:tag . (make-temp-name "item"))
+	     (contents . "%s ipsum")))
+   '(plain-list . ((contents . (concat
+				" - lorem :: ipsum\n"
+				" - dolor :: sit\n"))))
+   '(property-drawer . ((contents .(concat
+				    " :lorem: ipsum\n"
+				    " :dolo: sit\n"))))
+   '(quote-block . ((contents . "%s ipsum")))
+   '(section . ((contents . "%s ipsum")))
+   '(special-block . ((:type . ("LATEX" "HTML" "ORG"))
+		      (contents . "%s ipsum")))
+   '(babel-call . ((:value . "%s")))
+   '(clock . ((:value
+	       . "[2014-08-15 Fr 17:17]--[2014-08-15 Fr 17:20]")
+	      (:duration . "0:03")))
+   '(comment . ((:value . "%s ipsum")))
+   '(comment-block . ((:value . "%s ipsum")))
+   '(diary-sexp . ((:value
+		    ."%%(org-anniversary 1956 5 14) A.D %dy old" )))
+   '(example-block . ((:switches . ("-n -r" "-n" "-r" "" "" "" ""))
+		      (:preserve-intent . (1 nil)) ; FIXME number?
+		      (:value . "%s ipsum")))
+   '(fixed-width . ((:value . "%s ipsum")))
+   '(horizontal-rule . (("-----")))
+   '(keyword . ((:key . "TODO")
+		(:value . "TODO | DONE")))
+   ;; '(keyword . ((:key . (make-temp-name "kw"))
+   ;; 	      (:value . (make-temp-name "val"))))
+   '(latex-environment . ((:value . " a=+\sqrt{2} ")))
+   '(node-property . ((:key . (make-temp-name "prop"))
+		      (:value . (make-temp-name "val"))))
+   '(paragraph . ((contents . "%s ipsum")))
+   '(planning . ((:deadline . "<2014-08-15 Fr 22:00>")
+		 (:scheduled
+		  . "<2014-08-15 Fr 20:00>--<2014-08-15 Fr 21:00>")
+		 (:closed . nil)))
+   '(scr-block . ((:language . (mapcar
+				(lambda (--lang)
+				  (symbol-name (car --lang)))
+				org-babel-load-languages))
+		  (:switches . ("-n -r" "-n" "-r" "" "" "" "" ""))
+		  (:parameters . ":var x=5 :results raw")
+		  (:value . "x")
+		  (:preserve-indent . (1 nil)))) ; FIXME number?
+   '(table . ((:type . (org table.el))
+	      (:value . "| %s | ipsum |\n| lorem | ipsum |\n")
+	      (:tblfm . "$5=taylor($2,%4,%3);n3")))
+   '(table-row . ((:type . (rule standard))
+		  (contents . "%s ipsum")))
+   '(quote-block . ((contents . "%s ipsum"))))
+  "AList of elements and their interpreted keywords, with
+  example values.")
+
+;;;;; Functions
 
 (defun org-dp--calc-val (val)
   "Select or calc example value from VAL."

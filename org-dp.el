@@ -106,6 +106,10 @@
    '(table-row . (:type contents)))
   "AList of elements and their interpreted properties.")
 
+(defconst org-dp-value-blocks
+  (list 'comment-block 'example-block 'src-block)
+  "List of Org block that have a :value instead of contents.")
+
 (defconst org-dp-affiliated-keys
   (list :caption :data :header :headers :label :name :plot :resname
 	:result :results :source :srcname :tblname)
@@ -136,12 +140,18 @@
 (defun* org-dp-create (elem-type &optional contents insert-p affiliated &rest args)
   "Create Org element, maybe insert at point."
   (let* ((type (or elem-type 'headline))
+	 (value-block-p (memq type org-dp-value-blocks))
 	 (cont (if (consp contents)
-		   contents
-		 (list 'section nil (or contents ""))))
+		     contents
+		   (list 'section nil (or contents ""))))
+	 (val (when value-block-p (list :value contents)))
 	 (strg (org-element-interpret-data
 		(append (list type)
-			(list (append (caar args) affiliated))
+			(list
+			 (if value-block-p
+			     (org-combine-plists
+			      (append (caar args) affiliated) val)
+			   (append (caar args) affiliated)))
 			(list cont)))))
     (if insert-p (insert strg) strg)))
 
@@ -359,7 +369,6 @@ specifies the Org Babel language."
 	       header-args))))
     (list :language lang :parameters header-args)))
 
-
 (defun* org-dp-prompt (&optional elem elem-lst &key noprompt-cont noprompt-val noprompt-replace noprompt-affiliated noprompt-src-block noprompt-args)
   "Prompt user for arguments.
 
@@ -455,11 +464,6 @@ The function's return list consists of the following elements:
 	 (arglst (remove 'contents
 			 (cdr (assoc elem-type org-dp-elem-props))))
 	 affiliated args)
-    (message
-     (concat
-      "elem-type: %s\n contents: %s\n value: %s\n replace: %s\n"
-      " arglst: %s")
-     elem-type contents value replace arglst)
     ;; get affiliated keywords
     (if noprompt-affiliated
 	(when (consp noprompt-affiliated)
@@ -517,18 +521,19 @@ The function's return list consists of the following elements:
 			(org-string-nw-p accum))))
 		   ;; FIXME empty #+results: header displayed
 		   ((memq --aff-key org-dp-dual-keys)
-		    (cons (org-string-nw-p
-			   (read-string
-			    (format " %s value " --aff-key)))
-			  (org-string-nw-p
-			   (read-string
-			    (format " %s dual " --aff-key)))))
+		    (let ((val (org-string-nw-p
+				(read-string
+				 (format " %s value " --aff-key))))
+			  (dual (org-string-nw-p
+				 (read-string
+				  (format " %s dual " --aff-key)))))
+		      (and val dual (cons val dual))))
 		   (t (org-string-nw-p
 		       (read-string (format "%s " --aff-key))))))
 		 affiliated))))
-	   (union org-dp-single-keys
-		  (append org-dp-multiple-keys
-			  org-dp-parsed-keys))))))
+	   (delete-duplicates
+	    (append org-dp-single-keys org-dp-multiple-keys
+		    org-dp-parsed-keys org-dp-dual-keys))))))
     ;; get src-block parameters
     (if noprompt-src-block
 	(when (consp noprompt-src-block)
@@ -542,7 +547,6 @@ The function's return list consists of the following elements:
 		 (y-or-n-p
 		  "Src-block params - use default values "))
 	    (setq args
-		  ;; (cons
 		  (append
 		   (list
 		    :language (org-element-property :language elem)
@@ -552,7 +556,6 @@ The function's return list consists of the following elements:
 	  (when (y-or-n-p "Provide src-block params ")
 	    (setq args
 		  (append
-		   ;; (cons
 		   (call-interactively
 		    'org-dp-prompt-for-src-block-props)
 		   args))))))
@@ -560,7 +563,7 @@ The function's return list consists of the following elements:
     (if noprompt-args
 	(when (consp noprompt-args)
 	  (setq args (cons noprompt-args args)))
-      ;; maybe un-nest args plist (hack)
+      ;; maybe unnest args-plist (hack)
       (when (and args (consp (car args)))
 	(setq args (car args)))
       ;; special case value 
@@ -585,8 +588,6 @@ The function's return list consists of the following elements:
 		      (org-element-property --prop elem)
 		    (read-string (format "%s " --prop))))
 		 args)))))
-    ;; (message "return: %s"
-    ;; 	     (list elem-type contents replace affiliated args))
     (list elem-type contents replace affiliated args)))
 
 
