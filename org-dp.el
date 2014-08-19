@@ -427,7 +427,7 @@ The function's return list consists of the following elements:
 				   org-dp-elem-props)))
 			   (org-dp-contents elem t)
 			 (org-element-property :value elem)))
-		      (t (read-string "Contents: ")))))
+		      (t (read-string "Element contents: ")))))
 	 (value (when (memq :value
 			    (cdr (assoc elem-type
 					org-dp-elem-props)))
@@ -445,13 +445,13 @@ The function's return list consists of the following elements:
 			(org-element-property :value elem)
 		      (or contents
 			  (org-dp-contents elem t))))
-		   (t (read-string "Value: ")))))
+		   (t (read-string "Element value: ")))))
 	 (replace (if noprompt-replace
-		      (intern (org-string-nw-p noprompt-replace))
-		    (intern (org-completing-read
-			     "Replace? "
-			     (mapcar 'symbol-name
-				     '(nil t append prepend))))))
+		      (org-string-nw-p noprompt-replace)
+		    (org-completing-read
+		     "Replace? "
+		     (mapcar 'symbol-name
+			     '(nil t append prepend)))))
 	 (arglst (remove 'contents
 			 (cdr (assoc elem-type org-dp-elem-props))))
 	 affiliated args)
@@ -515,6 +515,7 @@ The function's return list consists of the following elements:
 		      (if (consp accum)
 			  accum
 			(org-string-nw-p accum))))
+		   ;; FIXME empty #+results: header displayed
 		   ((memq --aff-key org-dp-dual-keys)
 		    (cons (org-string-nw-p
 			   (read-string
@@ -584,8 +585,8 @@ The function's return list consists of the following elements:
 		      (org-element-property --prop elem)
 		    (read-string (format "%s " --prop))))
 		 args)))))
-    (message "return: %s"
-    	     (list elem-type contents replace affiliated args))
+    ;; (message "return: %s"
+    ;; 	     (list elem-type contents replace affiliated args))
     (list elem-type contents replace affiliated args)))
 
 

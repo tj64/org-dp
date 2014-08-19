@@ -186,29 +186,22 @@
 ;;; Functions and Commands
 ;;;; Wrap in Block
 
-(defun org-dp-wrap-in-block (&optional type lines &rest headers)
+(defun org-dp-wrap-in-block (&optional lines)
   "Wrap sexp-at-point or region in Org block.
 
-Use block TYPE if given, an Emacs-Lisp src-block otherwise. A
-region instead of the sexp-at-point is wrapped if either
+A region instead of the sexp-at-point is wrapped if either
 
    - optional arg LINES is an (positive or negative) integer or
+
    - the region is active
 
 In the first case the region is determined by moving +/- LINES
 forward/backward from point using `forward-line', in the second
 case the active region is used.
 
-If point is already inside of a block, modify or delete this
-block instead of wrapping it in another block.
-
-When called with prefix argument 'C-u', prompt the user for the
-Org-Babel language to use. When called with two prefix arguments
-'C-u C-u', prompt the user for both the Org-Babel language to use
-and the number of lines to be wrapped.
-
-If `current-prefix-arg' is non-nil and block-type is `src',
-prompt the user for additional header-args."
+If point is already inside of a block, modify it or unwrap its
+content/value instead of wrapping it in another block, except if
+explicitly asked for by user."
   (interactive
    (let* (;; point in block 
 	  (in-block
@@ -277,142 +270,311 @@ prompt the user for additional header-args."
 			    elem-at-pt
 			    (nth 4 user-info))))
 		   (user-error "Surrounding block replaced."))
-;; (list elem-type contents (intern replace) affiliated args)
-		 ;; ;; src-blocks
-		 ;; (if parsed-src-block
-		 ;;     (progn
-		 ;;       (save-excursion
-		 ;; 	 (goto-char
-		 ;; 	  (1- (org-element-property
-		 ;; 	       :end parsed-src-block)))
-		 ;; 	 (kill-whole-line)
-		 ;; 	 (push-mark))
-		 ;;       (delete-region
-		 ;; 	(org-element-property
-		 ;; 	 :begin parsed-src-block)
-		 ;; 	(org-element-property
-		 ;; 	 :post-affiliated parsed-src-block)))
-		 ;;   ;; other blocks
-		 ;;   (save-excursion
-		 ;;     (goto-char (or (cdr-safe block-limits)
-		 ;; 		    (cdr-safe dblock-limits)))
-		 ;;     (save-excursion
-		 ;;       (forward-line -1) (push-mark))
-		 ;;     (kill-whole-line))
-		 ;;   (goto-char (or (car-safe block-limits)
-		 ;; 		  (car-safe dblock-limits)))
-		 ;;   (kill-whole-line)))
 		;; nest blocks or abort
 		(t (if (y-or-n-p "Really nest blocks ")
 		       nil
-		     (user-error "Action aborted.")))))))
-	  ;; point not in block
-	  (babel-lang-types (mapcar
-			     (lambda (--lang)
-			       (symbol-name (car --lang)))
-			     org-babel-load-languages))
-	  (org-block-types (delete "src"
-				   (mapcar
-				    (lambda (--block)
-				      (downcase (car --block)))
-				    org-element-block-name-alist)))
-	  (all-types (append babel-lang-types org-block-types
-			     (list "dynamic" "special")))
-	  (ido-read-block-type '(ido-completing-read
-				 "Block Type: " all-types
-				 nil nil nil nil "emacs-lisp"))
-	  ;; (ido-read-headers '(while (y-or-n-p "Add header ")
-	  ;; 		       (cons
-	  ;; 			(ido-completing-read
-	  ;; 			 "arg: "
-	  ;; 			 (mapcar
-	  ;; 			  'symbol-name
-	  ;; 			  org-babel-header-arg-names)
-	  ;; 			 nil nil nil nil "var")
-	  ;; 			(read-string "value: "))))
-	  (read-dyn-params '(while (y-or-n-p "Add parameter ")
-			      (cons
-			       (read-string "param: ")
-			       (read-string "value: ")))))
-     (cond
-      ((equal current-prefix-arg nil) nil)
-      ((equal current-prefix-arg '(4))
-       (let ((typ (eval ido-read-block-type)))
-	 (list typ nil	       
-	       (cond
-		((member-ignore-case typ babel-lang-types)
-		 (while (y-or-n-p "Add header ")
-		   (tj/prompt-for-header typ)))
-		;; (eval ido-read-headers))
-		((string= typ "dynamic")
-		 (eval read-dyn-params))
-		((string= typ "special")
-		 (read-string "Name: "))))))
-      ((equal current-prefix-arg '(16))
-       (let ((typ (eval ido-read-block-type)))
-	 (list typ
-	       (read-number "Number of lines to wrap: " 1)
-	       (cond
-		((member-ignore-case typ babel-lang-types)
-		 (while (y-or-n-p "Add header ")
-		   (tj/prompt-for-header typ)))
-		;; (eval ido-read-headers))
-		((string= typ "dynamic")
-		 (eval read-dyn-params))
-		((string= typ "special")
-		 (read-string "Name: "))))))
-      (current-prefix-arg
-       (list nil nil ido-read-headers)))))
+		     (user-error "Action aborted."))))))))
+     (when current-prefix-arg 
+       (list (read-number "Number of lines to wrap: " 1)))))
   (if (called-interactively-p 'any) 
-      (let* ((block-type (or type "emacs-lisp"))
+      (let* ((user-info (org-dp-prompt
+			 nil
+			 '(src-block dynamic-block center-block
+				     quote-block special-block
+				     comment-block
+				     example-block)
+			 :noprompt-cont t
+			 :noprompt-replace t))
+	     (empty-line (save-match-data
+			   (looking-at "^[[:space:]]*$")))
 	     (beg (or (and (not lines)
 			   (region-active-p)
 			   (region-beginning))
 		      (point)))
-	     (marker (save-excursion (goto-char beg) (point-marker)))
+	     (marker (save-excursion
+		       (goto-char beg) (point-marker)))
 	     (bol (save-excursion (goto-char beg) (bolp)))
 	     (end (cond
 		   (lines (save-excursion
 			    (forward-line lines) (point)))
 		   ((region-active-p)(region-end))
+		   (empty-line point-at-eol)
 		   (t (save-excursion
 			(forward-sexp) (point)))))
 	     (cut-strg (buffer-substring beg end))
-	     (babel-langs (mapcar
-			   (lambda (--lang)
-			     (symbol-name (car --lang)))
-			   org-babel-load-languages))
-	     (block-names (delete "src"
-				  (mapcar
-				   (lambda (--block)
-				     (downcase (car --block)))
-				   org-element-block-name-alist))))
+)
+	     ;; (babel-langs (mapcar
+	     ;; 		   (lambda (--lang)
+	     ;; 		     (symbol-name (car --lang)))
+	     ;; 		   org-babel-load-languages))
+	     ;; (block-names (delete "src"
+	     ;; 			  (mapcar
+	     ;; 			   (lambda (--block)
+	     ;; 			     (downcase (car --block)))
+	     ;; 			   org-element-block-name-alist)))
 	(delete-region beg end)
 	(goto-char (marker-position marker))
-	(insert
-	 (format
-	  "%s#+begin%s\n%s%s#+end%s\n"
-	  (if (or (and lines (< lines 0)) bol) "" "\n")
-	  (cond
-	   ((member block-type babel-langs)
-	    (format "_src %s" block-type))
-	   ((member block-type block-names)
-	    (concat "_" block-type))
-	   (t ": "))
-	  cut-strg
-	  (if lines "" "\n")
-	  (cond
-	   ((member block-type babel-langs) "_src")
-	   ((member block-type block-names) (concat "_" block-type))
-	   (t ": "))))
-	(save-excursion
-	  (forward-line -1)
-	  (while headers
-	    (let ((pair (pop headers)))
-	      (tj/insert-header-arg
-	       (car pair) (cdr pair) 'KEYWORD-P))))
+	(apply 'org-dp-create
+	       (nth 0 user-info)
+	       cut-strg
+	       t
+	       (nth 3 user-info)
+	       (nth 4 user-info))
+	;; (insert
+	;;  (format
+	;;   "%s#+begin%s\n%s%s#+end%s\n"
+	;;   (if (or (and lines (< lines 0)) bol) "" "\n")
+	;;   (cond
+	;;    ((member block-type babel-langs)
+	;;     (format "_src %s" block-type))
+	;;    ((member block-type block-names)
+	;;     (concat "_" block-type))
+	;;    (t ": "))
+	;;   cut-strg
+	;;   (if lines "" "\n")
+	;;   (cond
+	;;    ((member block-type babel-langs) "_src")
+	;;    ((member block-type block-names) (concat "_" block-type))
+	;;    (t ": "))))
+	;; (save-excursion
+	;;   (forward-line -1)
+	;;   (while headers
+	;;     (let ((pair (pop headers)))
+	;;       (tj/insert-header-arg
+	;;        (car pair) (cdr pair) 'KEYWORD-P))))
 	(set-marker marker nil))
     (call-interactively 'tj/wrap-in-block)))
+
+
+;; (defun org-dp-wrap-in-block (&optional type lines &rest headers)
+;;   "Wrap sexp-at-point or region in Org block.
+
+;; Use block TYPE if given, an Emacs-Lisp src-block otherwise. A
+;; region instead of the sexp-at-point is wrapped if either
+
+;;    - optional arg LINES is an (positive or negative) integer or
+
+;;    - the region is active
+
+;; In the first case the region is determined by moving +/- LINES
+;; forward/backward from point using `forward-line', in the second
+;; case the active region is used.
+
+;; If point is already inside of a block, modify it or unwrap its
+;; content/value instead of wrapping it in another block, except if
+;; explicitly asked for by user.
+
+;; When called with prefix argument 'C-u', prompt the user for the
+;; Org-Babel language to use. When called with two prefix arguments
+;; 'C-u C-u', prompt the user for both the Org-Babel language to use
+;; and the number of lines to be wrapped.
+
+;; If `current-prefix-arg' is non-nil and block-type is `src',
+;; prompt the user for additional header-args."
+;;   (interactive
+;;    (let* (;; point in block 
+;; 	  (in-block
+;; 	   (let* ((dblock-limits (org-between-regexps-p
+;; 				  org-dblock-start-re
+;; 				  org-dblock-end-re))
+;; 		  (src-block-beg
+;; 		   (unless dblock-limits
+;; 		     (org-babel-where-is-src-block-head)))
+;; 		  (block-limits
+;; 		   (unless (or dblock-limits src-block-beg)
+;; 		     (org-in-regexp org-block-regexp 1000))))
+;; 	     (when
+;; 		 (or block-limits dblock-limits src-block-beg)
+;; 	       (cond
+;; 		;; remove surrounding block
+;; 		((y-or-n-p "Unwrap block content ")
+;; 		 (cond
+;; 		  (dblock-limits
+;; 		   (save-excursion
+;; 		     (goto-char (car dblock-limits))
+;; 		     (org-dp-rewire 'paragraph t t)))
+;; 		  (src-block-beg
+;; 		   (save-excursion
+;; 		     (goto-char src-block-beg)
+;; 		     (org-dp-rewire
+;; 		      'paragraph
+;; 		      (lambda (_cont_ elem)
+;; 			(org-element-property :value elem)) t)))
+;; 		  (block-limits
+;; 		   (save-excursion
+;; 		     (goto-char (car block-limits))
+;; 		     (org-dp-rewire
+;; 		      'paragraph
+;; 		      (lambda (_cont_ elem)
+;; 			(let ((type (org-element-type elem)))
+;; 			  (case type
+;; 			    ((center-block
+;; 			      quote-block special-block)
+;; 			     (org-dp-contents elem t))
+;; 			    ((comment-block example-block)
+;; 			     (org-element-property :value elem))
+;; 			    (t nil))))
+;; 		      t))))
+;; 		 (user-error "Block content unwrapped."))
+;; 		;; replace surrounding block
+;; 		((y-or-n-p "Replace surrounding block ")
+;; 		 (save-excursion
+;; 		   (goto-char (or (car dblock-limits)
+;; 				  src-block-beg
+;; 				  (car block-limits)))
+;; 		   (let* ((elem-at-pt (copy-list
+;; 				       (org-element-at-point))) 
+;; 			  (user-info
+;; 			  (org-dp-prompt
+;; 			   elem-at-pt			   
+;; 			   '(src-block dynamic-block center-block
+;; 				       quote-block special-block
+;; 				       comment-block
+;; 				       example-block))))
+;; 		     (apply 'org-dp-rewire
+;; 			    (nth 0 user-info)
+;; 			    (nth 1 user-info)
+;; 			    (nth 2 user-info)
+;; 			    (nth 3 user-info)
+;; 			    elem-at-pt
+;; 			    (nth 4 user-info))))
+;; 		   (user-error "Surrounding block replaced."))
+;; ;; (list elem-type contents (intern replace) affiliated args)
+;; 		 ;; ;; src-blocks
+;; 		 ;; (if parsed-src-block
+;; 		 ;;     (progn
+;; 		 ;;       (save-excursion
+;; 		 ;; 	 (goto-char
+;; 		 ;; 	  (1- (org-element-property
+;; 		 ;; 	       :end parsed-src-block)))
+;; 		 ;; 	 (kill-whole-line)
+;; 		 ;; 	 (push-mark))
+;; 		 ;;       (delete-region
+;; 		 ;; 	(org-element-property
+;; 		 ;; 	 :begin parsed-src-block)
+;; 		 ;; 	(org-element-property
+;; 		 ;; 	 :post-affiliated parsed-src-block)))
+;; 		 ;;   ;; other blocks
+;; 		 ;;   (save-excursion
+;; 		 ;;     (goto-char (or (cdr-safe block-limits)
+;; 		 ;; 		    (cdr-safe dblock-limits)))
+;; 		 ;;     (save-excursion
+;; 		 ;;       (forward-line -1) (push-mark))
+;; 		 ;;     (kill-whole-line))
+;; 		 ;;   (goto-char (or (car-safe block-limits)
+;; 		 ;; 		  (car-safe dblock-limits)))
+;; 		 ;;   (kill-whole-line)))
+;; 		;; nest blocks or abort
+;; 		(t (if (y-or-n-p "Really nest blocks ")
+;; 		       nil
+;; 		     (user-error "Action aborted."))))))))
+;; 	  ;; point not in block
+;; 	  ;; (babel-lang-types (mapcar
+;; 	  ;; 		     (lambda (--lang)
+;; 	  ;; 		       (symbol-name (car --lang)))
+;; 	  ;; 		     org-babel-load-languages))
+;; 	  ;; (org-block-types (delete "src"
+;; 	  ;; 			   (mapcar
+;; 	  ;; 			    (lambda (--block)
+;; 	  ;; 			      (downcase (car --block)))
+;; 	  ;; 			    org-element-block-name-alist)))
+;; 	  ;; (all-types (append babel-lang-types org-block-types
+;; 	  ;; 		     (list "dynamic" "special")))
+;; 	  ;; (ido-read-block-type '(ido-completing-read
+;; 	  ;; 			 "Block Type: " all-types
+;; 	  ;; 			 nil nil nil nil "emacs-lisp"))
+;; 	  ;; ;; (ido-read-headers '(while (y-or-n-p "Add header ")
+;; 	  ;; ;; 		       (cons
+;; 	  ;; ;; 			(ido-completing-read
+;; 	  ;; ;; 			 "arg: "
+;; 	  ;; ;; 			 (mapcar
+;; 	  ;; ;; 			  'symbol-name
+;; 	  ;; ;; 			  org-babel-header-arg-names)
+;; 	  ;; ;; 			 nil nil nil nil "var")
+;; 	  ;; ;; 			(read-string "value: "))))
+;; 	  ;; (read-dyn-params '(while (y-or-n-p "Add parameter ")
+;; 	  ;; 		      (cons
+;; 	  ;; 		       (read-string "param: ")
+;; 	  ;; 		       (read-string "value: ")))))
+;;      (cond
+;;       ((equal current-prefix-arg nil) nil)
+;;       ((equal current-prefix-arg '(4))
+;;        (let ((typ (eval ido-read-block-type)))
+;; 	 (list typ nil	       
+;; 	       (cond
+;; 		((member-ignore-case typ babel-lang-types)
+;; 		 (while (y-or-n-p "Add header ")
+;; 		   (tj/prompt-for-header typ)))
+;; 		;; (eval ido-read-headers))
+;; 		((string= typ "dynamic")
+;; 		 (eval read-dyn-params))
+;; 		((string= typ "special")
+;; 		 (read-string "Name: "))))))
+;;       ((equal current-prefix-arg '(16))
+;;        (let ((typ (eval ido-read-block-type)))
+;; 	 (list typ
+;; 	       (read-number "Number of lines to wrap: " 1)
+;; 	       (cond
+;; 		((member-ignore-case typ babel-lang-types)
+;; 		 (while (y-or-n-p "Add header ")
+;; 		   (tj/prompt-for-header typ)))
+;; 		;; (eval ido-read-headers))
+;; 		((string= typ "dynamic")
+;; 		 (eval read-dyn-params))
+;; 		((string= typ "special")
+;; 		 (read-string "Name: "))))))
+;;       (current-prefix-arg
+;;        (list nil nil ido-read-headers)))))
+;;   (if (called-interactively-p 'any) 
+;;       (let* ((block-type (or type "emacs-lisp"))
+;; 	     (beg (or (and (not lines)
+;; 			   (region-active-p)
+;; 			   (region-beginning))
+;; 		      (point)))
+;; 	     (marker (save-excursion (goto-char beg) (point-marker)))
+;; 	     (bol (save-excursion (goto-char beg) (bolp)))
+;; 	     (end (cond
+;; 		   (lines (save-excursion
+;; 			    (forward-line lines) (point)))
+;; 		   ((region-active-p)(region-end))
+;; 		   (t (save-excursion
+;; 			(forward-sexp) (point)))))
+;; 	     (cut-strg (buffer-substring beg end))
+;; 	     (babel-langs (mapcar
+;; 			   (lambda (--lang)
+;; 			     (symbol-name (car --lang)))
+;; 			   org-babel-load-languages))
+;; 	     (block-names (delete "src"
+;; 				  (mapcar
+;; 				   (lambda (--block)
+;; 				     (downcase (car --block)))
+;; 				   org-element-block-name-alist))))
+;; 	(delete-region beg end)
+;; 	(goto-char (marker-position marker))
+;; 	(insert
+;; 	 (format
+;; 	  "%s#+begin%s\n%s%s#+end%s\n"
+;; 	  (if (or (and lines (< lines 0)) bol) "" "\n")
+;; 	  (cond
+;; 	   ((member block-type babel-langs)
+;; 	    (format "_src %s" block-type))
+;; 	   ((member block-type block-names)
+;; 	    (concat "_" block-type))
+;; 	   (t ": "))
+;; 	  cut-strg
+;; 	  (if lines "" "\n")
+;; 	  (cond
+;; 	   ((member block-type babel-langs) "_src")
+;; 	   ((member block-type block-names) (concat "_" block-type))
+;; 	   (t ": "))))
+;; 	(save-excursion
+;; 	  (forward-line -1)
+;; 	  (while headers
+;; 	    (let ((pair (pop headers)))
+;; 	      (tj/insert-header-arg
+;; 	       (car pair) (cdr pair) 'KEYWORD-P))))
+;; 	(set-marker marker nil))
+;;     (call-interactively 'tj/wrap-in-block)))
 
 ;; (defun org-dp-wrap-in-block (&optional type lines &rest headers)
 ;;   "Wrap sexp-at-point or region in Org block.
