@@ -412,9 +412,12 @@ specifies the Org Babel language."
 		       (if (and arg
 				(not (string= "default" arg)))
 			   arg "")))
+			   ;; arg nil)))
 		   vals " "))))
 	       (if (org-string-nw-p header-args) " " "")
 	       header-args))))
+    (message "src-block params: %s"
+	     (list :language lang :parameters header-args))
     (list :language lang :parameters header-args)))
 
 (defun* org-dp-prompt (&optional elem elem-lst &key noprompt-cont noprompt-val noprompt-replace noprompt-affiliated noprompt-src-block noprompt-args)
@@ -638,6 +641,8 @@ The function's return list consists of the following elements:
 		      (org-element-property --prop elem)
 		    (read-string (format "%s " --prop))))
 		 args)))))
+    (message "return-list: %s"
+	     (list elem-type contents replace affiliated args))
     (list elem-type contents replace affiliated args)))
 
 ;;; Run Hooks and Provide
