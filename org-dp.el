@@ -121,6 +121,10 @@
    '(table-row . (:type contents)))
   "AList of elements and their interpreted properties.")
 
+(defconst org-dp-no-newline-elems
+  (list 'babel-call 'footnote-definition 'inline-task)
+  "List of Org elements that not necessarily start with a newline.")
+
 (defconst org-dp-value-blocks
   (list 'comment-block 'example-block 'src-block)
   "List of Org block that have a :value instead of contents.")
@@ -203,7 +207,9 @@
 			  contents))))))
     (if insert-p
 	(progn
-	  (unless (bolp) (newline))
+	  (unless (and (bolp)
+		       (not (memq type org-dp-no-newline-elems)))
+	    (newline))
 	  (insert strg))
       strg)))
 
