@@ -173,7 +173,7 @@
   "Create Org element, maybe insert at point."
   (let* ((type (or elem-type 'headline))
 	 (val (when (memq type org-dp-value-blocks)
-		(list :value contents)))
+		(list :value (or (org-string-nw-p contents) "\n"))))
 	 ;; FIXME kind of a hack (really necessary?)
 	 (pproc-args (cond
 		      ((and (consp (car args))
@@ -201,7 +201,11 @@
 			(if (stringp contents)
 			    (cons 'section `(nil ,contents))
 			  contents))))))
-    (if insert-p (insert strg) strg)))
+    (if insert-p
+	(progn
+	  (unless (bolp) (newline))
+	  (insert strg))
+      strg)))
 
 (defun* org-dp-rewire (elem-type &optional contents replace affiliated element &rest args)
   "Rewire element-at-point or ELEMENT (if given).
