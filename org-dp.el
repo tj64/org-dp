@@ -121,7 +121,7 @@
    '(table-row . (:type contents)))
   "AList of elements and their interpreted properties.")
 
-(defconst org-dp-no-newline-elems
+(defconst org-dp-inline-elems
   (list 'babel-call 'footnote-definition 'inline-task)
   "List of Org elements that not necessarily start with a newline.")
 
@@ -138,20 +138,22 @@
 
 (defconst org-dp-single-keys
   (list :name :plot :results)
-  "Selection of new downcased keywords from
-  `org-element-affiliated-keywords'.")
+  "Selection of downcased keywords from
+  `org-element-affiliated-keywords', namely those new keywords
+  not member of `org-dp-multiple-keys', `org-dp-parsed-keys' or
+  `org-dp-dual-keys'.")
 
 (defconst org-dp-multiple-keys
   (list :header :caption)
-  "New downcased keywords from `org-element-multiple-keywords'.")
+  "Downcased keywords from `org-element-multiple-keywords'.")
 
 (defconst org-dp-parsed-keys
   (list :caption)
-  "New downcased keywords from `org-element-parsed-keywords'.")
+  "Downcased keywords from `org-element-parsed-keywords'.")
 
 (defconst org-dp-dual-keys
   (list :caption :results)
-  "New downcased keywords from `org-element-dual-keywords'.")
+  "Downcased keywords from `org-element-dual-keywords'.")
 
 ;;;; Customs
 
@@ -208,7 +210,7 @@
     (if insert-p
 	(progn
 	  (unless (and (bolp)
-		       (not (memq type org-dp-no-newline-elems)))
+		       (not (memq type org-dp-inline-elems)))
 	    (newline))
 	  (insert strg))
       strg)))
