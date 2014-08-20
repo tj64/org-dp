@@ -633,7 +633,7 @@ The function's return list consists of the following elements:
 	(setq args (car args)))
       ;; special case value 
       (when value
-	(delq :value arglst)
+	(setq arglst (delq :value arglst))
 	(setq args (plist-put args :value value)))
       (while arglst
 	(let ((--prop (pop arglst)))
