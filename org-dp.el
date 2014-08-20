@@ -356,8 +356,7 @@ NO-PROPERTIES-P is non-nil too."
        (org-element-property :begin elem)
        (org-element-property :end elem))
       (let ((cont (org-element-map
-		      (org-element-parse-buffer 'object
-						'visible-only)
+		      (org-element-parse-buffer 'object)
 		      type 'org-element-contents nil t)))
 	(cond
 	 ((and interpret-p no-properties-p)
@@ -628,7 +627,7 @@ The function's return list consists of the following elements:
     (if noprompt-args
 	(when (consp noprompt-args)
 	  (setq args (cons noprompt-args args)))
-      ;; maybe unnest args-plist (hack)
+      ;; maybe unnest args-plist (FIXME hack)
       (when (and args (consp (car args)))
 	(setq args (car args)))
       ;; special case value 
