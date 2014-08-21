@@ -630,7 +630,7 @@ The function's return list consists of the following elements:
       ;; maybe unnest args-plist (FIXME hack)
       (when (and args (consp (car args)))
 	(setq args (car args)))
-      ;; special case value 
+      ;; special case value (FIXME prompted when shouldn't)
       (when value
 	(setq arglst (delq :value arglst))
 	(setq args (plist-put args :value value)))
