@@ -176,12 +176,17 @@
 ;;;; Core Functions
 
 (defun* org-dp-create (elem-type &optional contents insert-p affiliated &rest args)
-  "Create Org element, maybe insert at point."
+  "Create Org element of type ELEM-TYPE (headline by default).
+Depending on its type, CONTENTS is used as the element's content
+of value. If INSERT-P is non-nil, insert interpreted element at
+point. AFFILIATED should be a plist of affiliated keys and values
+if given. ARGS are key-value pairs of (interpreted) properties for
+ELEM-TYPE (see `org-dp-elem-props' for a complete overview)."
   (let* ((type (or elem-type 'headline))
 	 (val (when (memq type org-dp-value-blocks)
 		(list :value (or (org-string-nw-p contents) "\n"))))
 	 ;; FIXME kind of a hack (really necessary?)
-	 (pproc-args (cond
+	 (preproc-args (cond
 		      ((and (consp (car args))
 			    (consp (caar args)))
 		       (caar args))
@@ -191,18 +196,18 @@
 		(list type
 		      (cond
 		       ((consp affiliated) (org-combine-plists
-					    pproc-args affiliated
+					    preproc-args affiliated
 					    val))
 		       ((not affiliated)
 			(mapcar
 			 (lambda (--aff-kw)
-			   (setq pproc-args
-				 (plist-put pproc-args
+			   (setq preproc-args
+				 (plist-put preproc-args
 					    --aff-kw nil)))
-			 (intersection pproc-args
+			 (intersection preproc-args
 				       org-dp-affiliated-keys))
-			(org-combine-plists pproc-args val))
-		       (t (org-combine-plists pproc-args val)))
+			(org-combine-plists preproc-args val))
+		       (t (org-combine-plists preproc-args val)))
 		      (unless val
 			(if (stringp contents)
 			    (cons 'section `(nil ,contents))
