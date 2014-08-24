@@ -117,13 +117,13 @@
    '(planning . (:deadline :scheduled :closed))
    '(src-block . (:language :switches :parameters :value
 			    :preserve-indent))
-   '(table . (:type :value :tblfm))
+   '(table . (:type :value :tblfm contents)) ; :value when table.el
    '(table-row . (:type contents)))
   "AList of elements and their interpreted properties.")
 
 (defconst org-dp-inline-elems
-  (list 'babel-call 'footnote-definition 'inline-task)
-  "List of Org elements that not necessarily start with a newline.")
+  (list 'babel-call 'footnote-definition 'inline-task 'table-cell)
+  "List of Org elements and objects that not necessarily start with a newline.")
 
 (defconst org-dp-value-blocks
   (list 'comment-block 'example-block 'src-block)
@@ -178,14 +178,14 @@
 (defun* org-dp-create (elem-type &optional contents insert-p affiliated &rest args)
   "Create Org element of type ELEM-TYPE (headline by default).
 Depending on its type, CONTENTS is used as the element's content
-of value. If INSERT-P is non-nil, insert interpreted element at
+or5 value. If INSERT-P is non-nil, insert interpreted element at
 point. AFFILIATED should be a plist of affiliated keys and values
 if given. ARGS are key-value pairs of (interpreted) properties for
 ELEM-TYPE (see `org-dp-elem-props' for a complete overview)."
   (let* ((type (or elem-type 'headline))
 	 (val (when (memq type org-dp-value-blocks)
 		(list :value (or (org-string-nw-p contents) "\n"))))
-	 ;; FIXME kind of a hack (really necessary?)
+	 ;; FIXME kind of a hack (pre-processing really necessary?)
 	 (preproc-args (cond
 		      ((and (consp (car args))
 			    (consp (caar args)))
@@ -209,7 +209,10 @@ ELEM-TYPE (see `org-dp-elem-props' for a complete overview)."
 			(org-combine-plists preproc-args val))
 		       (t (org-combine-plists preproc-args val)))
 		      (unless val
-			(if (stringp contents)
+			(if (and (stringp contents)
+				 (not (memq
+				       type
+				       org-element-all-objects)))
 			    (cons 'section `(nil ,contents))
 			  contents))))))
     (if insert-p
