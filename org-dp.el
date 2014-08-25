@@ -184,7 +184,9 @@ point. AFFILIATED should be a plist of affiliated keys and values
 if given. ARGS are key-value pairs of (interpreted) properties for
 ELEM-TYPE (see `org-dp-elem-props' for a complete overview)."
   (let* ((type (or elem-type 'headline))
-	 (val (when (memq type org-dp-value-blocks)
+	 (val (when (and (memq type org-dp-value-blocks)
+			 (not (org-string-nw-p
+			       (plist-get args :value))))	
 		(list :value (or (org-string-nw-p contents) "\n"))))
 	 ;; FIXME kind of a hack (pre-processing really necessary?)
 	 (preproc-args (cond
