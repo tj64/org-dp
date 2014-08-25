@@ -118,7 +118,8 @@
    '(src-block . (:language :switches :parameters :value
 			    :preserve-indent))
    '(table . (:type :value :tblfm contents)) ; :value when table.el
-   '(table-row . (:type contents)))
+   '(table-row . (:type contents))
+   '(verse-block . (contents)))
   "AList of elements and their interpreted properties.")
 
 (defconst org-dp-inline-elems
