@@ -155,7 +155,7 @@ see the docstring of that function for more info."
 		       '(src-block dynamic-block center-block
 				   quote-block special-block
 				   comment-block
-				   example-block)
+				   example-block verse-block)
 		       (progn
 			 (setq prompt-spec
 			       (plist-put prompt-spec
