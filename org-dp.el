@@ -178,10 +178,18 @@
 
 (defun* org-dp-create (elem-type &optional contents insert-p affiliated &rest args)
   "Create Org element of type ELEM-TYPE (headline by default).
+
 Depending on its type, CONTENTS is used as the element's content
-or5 value. If INSERT-P is non-nil, insert interpreted element at
-point. AFFILIATED should be a plist of affiliated keys and values
-if given. ARGS are key-value pairs of (interpreted) properties for
+or value. 
+
+If INSERT-P is nil, return interpreted string. If its value is
+the symbol 'data', return the raw data, otherwise, for any other
+non-nil value, insert interpreted element at point.
+
+AFFILIATED should be a plist of affiliated keys and values if
+given.
+
+If ARGS are key-value pairs of (interpreted) properties for
 ELEM-TYPE (see `org-dp-elem-props' for a complete overview)."
   (let* ((type (or elem-type 'headline))
 	 (val (when (and (memq type org-dp-value-blocks)
@@ -190,44 +198,45 @@ ELEM-TYPE (see `org-dp-elem-props' for a complete overview)."
 		(list :value (or (org-string-nw-p contents) "\n"))))
 	 ;; FIXME kind of a hack (pre-processing really necessary?)
 	 (preproc-args (cond
-		      ((and (consp (car args))
-			    (consp (caar args)))
-		       (caar args))
-		      ((consp (car args)) (car args))
-		      (t args)))
-	 (strg (org-element-interpret-data
-		(list type
-		      (cond
-		       ((consp affiliated) (org-combine-plists
-					    preproc-args affiliated
-					    val))
-		       ((not affiliated)
-			(mapcar
-			 (lambda (--aff-kw)
-			   (setq preproc-args
-				 (plist-put preproc-args
-					    --aff-kw nil)))
-			 (intersection preproc-args
-				       org-dp-affiliated-keys))
-			(org-combine-plists preproc-args val))
-		       (t (org-combine-plists preproc-args val)))
-		      (unless val
-			(if (and (stringp contents)
-				 (not (memq
-				       type
-				       org-element-all-objects)))
-			    (cons 'section `(nil ,contents))
-			  contents))))))
-    (if insert-p
-	(progn
-	  (unless (and (bolp)
-		       (not (memq type org-dp-inline-elems)))
-	    (newline))
-	  (insert strg))
-      strg)))
+			((and (consp (car args))
+			      (consp (caar args)))
+			 (caar args))
+			((consp (car args)) (car args))
+			(t args)))
+	 (data (list type
+		     (cond
+		      ((consp affiliated) (org-combine-plists
+					   preproc-args affiliated
+					   val))
+		      ((not affiliated)
+		       (mapcar
+			(lambda (--aff-kw)
+			  (setq preproc-args
+				(plist-put preproc-args
+					   --aff-kw nil)))
+			(intersection preproc-args
+				      org-dp-affiliated-keys))
+		       (org-combine-plists preproc-args val))
+		      (t (org-combine-plists preproc-args val)))
+		     (unless val
+		       (if (and (stringp contents)
+				(not (memq
+				      type
+				      org-element-all-objects)))
+			   (cons 'section `(nil ,contents))
+			 contents)))))
+    (cond
+     ((eq insert-p 'data) data)
+     (insert-p
+      (progn
+	(unless (and (bolp)
+		     (not (memq type org-dp-inline-elems)))
+	  (newline))
+	(insert (org-element-interpret-data data))))
+      (t (org-element-interpret-data data)))))
 
-(defun* org-dp-rewire (elem-type &optional contents replace affiliated element &rest args)
-  "Rewire element-at-point or ELEMENT (if given).
+(defun* org-dp-rewire (elem-type &optional contents replace affiliated &rest args)
+  "Rewire element-at-point.
 
 If CONTENTS is non-nil, act conditional on its value:
 
@@ -275,15 +284,7 @@ key. The first argument will then be replaced by the property's
 former value when applying the function. The second argument
 should be the parsed element itself, enabling access to its type
 and all its properties inside of the lambda expression."
-  (let* ((orig-elem (cond
-		     ((and (not (booleanp element))
-			   (symbolp element))
-		      (eval element))
-		     ((stringp element)
-		      (let ((el (car (read-from-string element))))
-			(when (consp el) el)))
-		     ((consp element) element)
-		     (t (org-element-at-point))))
+  (let* ((orig-elem (org-element-at-point))
 	 (type (or elem-type (org-element-type orig-elem)))
 	 (elem (copy-list orig-elem))
 	 (plist (copy-list (cadr elem)))
@@ -338,8 +339,7 @@ and all its properties inside of the lambda expression."
 	   (set-marker beg nil)
 	   (set-marker paff nil)
 	   (set-marker end nil)
-	   (save-excursion (insert strg))
-	   )))))
+	   (save-excursion (insert strg)))))))
 
 
 (defun org-dp-map ()
