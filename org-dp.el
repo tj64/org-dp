@@ -76,6 +76,82 @@
 ;; top of the src-block you can use `org-dp-toggle-headers' from
 ;; org-dp-lib.el for swapping headers and parameters.
 
+;; ** Examples 
+
+;; *** Create Src-Block
+
+;; : #+BEGIN_SRC emacs-lisp
+;; :   (org-dp-create 'src-block nil nil
+;; :                  '(:name "ex1" :header (":cache no" ":noweb yes"))
+;; :                  :language "picolisp"
+;; :                  :preserve-indent 1
+;; :                  :parameters ":results value"
+;; :                  :value "(+ 2 2)")
+;; : #+END_SRC
+
+;; #+results:
+;; : #+NAME: ex1
+;; : #+HEADER: :noweb yes
+;; : #+HEADER: :cache no
+;; : #+BEGIN_SRC picolisp :results value
+;; : (+ 2 2)
+;; : #+END_SRC
+
+
+;; *** Transform Src-Block into Example Block
+
+;; : #+NAME: ex2
+;; : #+HEADER: :results raw
+;; : #+BEGIN_SRC emacs-lisp  :exports both
+;; :  (org-dp-rewire 'example-block) 
+;; : #+END_SRC
+
+;; : #+results: ex2
+;; : #+BEGIN_EXAMPLE
+;; : (org-dp-rewire 'example-block) 
+;; : #+END_EXAMPLE
+
+
+;; *** Transform Src-Block into Headline
+
+;; : #+NAME: ex2
+;; : #+HEADER: :results raw
+;; : #+BEGIN_SRC emacs-lisp :cache no :noweb yes
+;; :   (org-dp-rewire 'headline
+;; :                  (lambda (_cont_ elem)
+;; :                    (concat
+;; :                     "This was an\n\n"
+;; :                     (org-element-property :language elem)
+;; :                     "\n\nsrc-block with header args\n\n"
+;; :                     (org-element-property :parameters elem)
+;; :                     "\n\nbefore."))
+;; :                     'append '(:name "transformed Src-Block")
+;; :                     :level 1
+;; :                     :title (lambda (_old_ elem)
+;; :                              (mapconcat
+;; :                               'upcase
+;; :                               (split-string
+;; :                                (car
+;; :                                 (org-element-property :header elem))
+;; : 				":")
+;; :                               " "))
+;; :                     :tags (lambda (_old_ elem)
+;; :                             (list (org-element-property :name elem)))
+;; : 		    :header nil)
+;; : #+END_SRC
+
+;; : #+NAME: transformed Src-Block
+;; : *  RESULTS RAW :ex2:
+;; : This was an
+;; : 
+;; : emacs-lisp
+;; : 
+;; : src-block with header args
+;; : 
+;; : :cache no :noweb yes
+;; : 
+;; : before.
+
 ;;; Requires
 
 (require 'cl)
