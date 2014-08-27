@@ -76,9 +76,9 @@
 ;; top of the src-block you can use `org-dp-toggle-headers' from
 ;; org-dp-lib.el for swapping headers and parameters.
 
-;; ** Examples 
+;;;; Examples 
 
-;; *** Create Src-Block
+;;;;; Create Src-Block
 
 ;; : #+BEGIN_SRC emacs-lisp
 ;; :   (org-dp-create 'src-block nil nil
@@ -98,7 +98,7 @@
 ;; : #+END_SRC
 
 
-;; *** Transform Src-Block into Example Block
+;;;;; Transform Src-Block into Example Block
 
 ;; : #+NAME: ex2
 ;; : #+HEADER: :results raw
@@ -112,7 +112,7 @@
 ;; : #+END_EXAMPLE
 
 
-;; *** Transform Src-Block into Headline
+;;;;; Transform Src-Block into Headline
 
 ;; : #+NAME: ex2
 ;; : #+HEADER: :results raw

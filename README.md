@@ -5,12 +5,7 @@
   - [Examples](#examples)
     - [Create Src-Block](#create-src-block)
     - [Transform Src-Block into Example Block](#transform-src-block-into-example-block)
-- [:RESULTS RAW](#:results-raw)
-- [:RESULTS RAW](#:results-raw)
-- [:RESULTS RAW](#:results-raw)
     - [Transform Src-Block into Headline](#transform-src-block-into-headline)
-- [RESULTS RAW](#results-raw)
-- [:RESULTS PP](#:results-pp)
 
 
 
@@ -106,97 +101,71 @@ org-dp-lib.el for swapping headers and parameters.
 
 ### Create Src-Block<a id="sec-1-4-1"></a>
 
-```lisp
-(org-dp-create 'src-block nil nil
-	       '(:name "ex1" :header (":cache no" ":noweb yes"))
-	       :language "picolisp"
-	       :preserve-indent 1
-	       :parameters ":results value"
-	       :value "(+ 2 2)")
-```
+    #+BEGIN_SRC emacs-lisp
+      (org-dp-create 'src-block nil nil
+                     '(:name "ex1" :header (":cache no" ":noweb yes"))
+                     :language "picolisp"
+                     :preserve-indent 1
+                     :parameters ":results value"
+                     :value "(+ 2 2)")
+    #+END_SRC
+
+    #+NAME: ex1
+    #+HEADER: :noweb yes
+    #+HEADER: :cache no
+    #+BEGIN_SRC picolisp :results value
+    (+ 2 2)
+    #+END_SRC
 
 ### Transform Src-Block into Example Block<a id="sec-1-4-2"></a>
 
-```lisp
-(org-dp-rewire 'example-block)
-```
+    #+NAME: ex2
+    #+HEADER: :results raw
+    #+BEGIN_SRC emacs-lisp  :exports both
+     (org-dp-rewire 'example-block) 
+    #+END_SRC
 
-nil
+    #+results: ex2
+    #+BEGIN_EXAMPLE
+    (org-dp-rewire 'example-block) 
+    #+END_EXAMPLE
 
-# :RESULTS RAW     :ex2:<a id="sec-2"></a>
+### Transform Src-Block into Headline<a id="sec-1-4-3"></a>
 
-This was an
+    #+NAME: ex2
+    #+HEADER: :results raw
+    #+BEGIN_SRC emacs-lisp :cache no :noweb yes
+      (org-dp-rewire 'headline
+                     (lambda (_cont_ elem)
+                       (concat
+                        "This was an\n\n"
+                        (org-element-property :language elem)
+                        "\n\nsrc-block with header args\n\n"
+                        (org-element-property :parameters elem)
+                        "\n\nbefore."))
+                        'append '(:name "transformed Src-Block")
+                        :level 1
+                        :title (lambda (_old_ elem)
+                                 (mapconcat
+                                  'upcase
+                                  (split-string
+                                   (car
+                                    (org-element-property :header elem))
+                                    ":")
+                                  " "))
+                        :tags (lambda (_old_ elem)
+                                (list (org-element-property :name elem)))
+                        :header nil)
+    #+END_SRC
 
-emacs-lisp
-
-src-block with header args
-
-before.
-
-# :RESULTS RAW     :ex2:<a id="sec-3"></a>
-
-This was an
-
-emacs-lisp
-
-src-block with header args
-
-before.
-
-# :RESULTS RAW     :ex2:<a id="sec-4"></a>
-
-This was an
-
-emacs-lisp
-
-src-block with header args
-
-:exports both
-
-before.
-
-### Transform Src-Block into Headline<a id="sec-4-0-1"></a>
-
-```lisp
-(org-dp-rewire 'headline
-	       (lambda (_cont_ elem)
-		 (concat
-		  "This was an\n\n"
-		  (org-element-property :language elem)
-		  "\n\nsrc-block with header args\n\n"
-		  (org-element-property :parameters elem)
-		  "\n\nbefore."))
-		  'append '(:name "transformed Src-Block")
-		  :level 1
-		  :title (lambda (_old_ elem)
-			   (mapconcat
-			    'upcase
-			    (split-string
-			     (car
-			      (org-element-property :header elem))
-			      ":")
-			    " "))
-		  :tags (lambda (_old_ elem)
-			  (list (org-element-property :name elem)))
-		  :header nil)
-```
-
-# RESULTS RAW     :ex2:<a id="sec-5"></a>
-
-This was an
-
-emacs-lisp
-
-src-block with header args
-
-before.
-
-# :RESULTS PP     :ex2:<a id="sec-6"></a>
-
-This was an
-
-emacs-lisp
-
-src-block with header args
-
-before.
+    #+NAME: transformed Src-Block
+    *  RESULTS RAW :ex2:
+    This was an
+    
+    emacs-lisp
+    
+    src-block with header args
+    
+    :cache no :noweb yes
+    
+    before.
