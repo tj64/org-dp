@@ -314,7 +314,7 @@ customizable variable `org-dp-misc-props'), a list of keys as
 strings, or a (single) regexp-string. If NEGATE-P is non-nil, the
 properties not matched by the filter are returned. If VERBOSE-P
 is non-nil, a message is printed if no property-drawer is found,
-otherwise nil is returned.."
+otherwise nil is returned."
   (let ((props (save-excursion
 		 (and
 		  (or (org-at-heading-p)
