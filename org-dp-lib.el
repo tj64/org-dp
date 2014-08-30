@@ -306,14 +306,15 @@ list of strings without duplicates."
       (delete-duplicates
        (append org-dp-misc-props org-props)))))
 
-(defun org-dp-filter-node-props (filter &optional negate-p silent-p)
+(defun org-dp-filter-node-props (filter &optional negate-p verbose-p)
   "Return filtered node-properties.
-FILTER should be either a symbol form `org-dp-prop-classes', the
+FILTER should be either a symbol from `org-dp-prop-classes', the
 symbol `org' (matching the union of all `org-dp-prop-classes' and
 customizable variable `org-dp-misc-props'), a list of keys as
 strings, or a (single) regexp-string. If NEGATE-P is non-nil, the
-properties not matched by the filter are returned. If SILENT-P is
-non-nil, no message is printed if no property-drawer is found."
+properties not matched by the filter are returned. If VERBOSE-P
+is non-nil, a message is printed if no property-drawer is found,
+otherwise nil is returned.."
   (let ((props (save-excursion
 		 (and
 		  (or (org-at-heading-p)
@@ -328,7 +329,7 @@ non-nil, no message is printed if no property-drawer is found."
 		    (org-dp-contents)))))
 	filtered-props)
     (if (not props)
-	(unless silent-p
+	(when verbose-p
 	  (message
 	   "Could not find properties at point %d in buffer %s."
 	   (point) (current-buffer)))
