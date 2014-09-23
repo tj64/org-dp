@@ -34,7 +34,6 @@
   :type 'string)
 
 ;;; Utilities
-
 ;;; Applications
 ;;;; Wrap in Block
 

@@ -669,11 +669,13 @@ The function's return list consists of the following elements:
 			  (org-dp-contents elem t))))
 		   (t (read-string "Element value: ")))))
 	 (replace (if noprompt-replace
-		      (org-string-nw-p noprompt-replace)
-		    (org-completing-read
+		      (when (org-string-nw-p noprompt-replace)
+			(intern noprompt-replace))
+		    (intern
+		     (org-completing-read
 		     "Replace? "
 		     (mapcar 'symbol-name
-			     '(nil t append prepend)))))
+			     '(nil t append prepend))))))
 	 (arglst (remove 'contents
 			 (cdr (assoc elem-type org-dp-elem-props))))
 	 affiliated args)
