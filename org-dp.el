@@ -256,7 +256,7 @@
   "Create Org element of type ELEM-TYPE (headline by default).
 
 Depending on its type, CONTENTS is used as the element's content
-or value. 
+or value.
 
 If INSERT-P is nil, return interpreted string. If its value is
 the symbol 'data', return the raw data, otherwise, for any other
@@ -265,8 +265,9 @@ non-nil value, insert interpreted element at point.
 AFFILIATED should be a plist of affiliated keys and values if
 given.
 
-If ARGS are key-value pairs of (interpreted) properties for
-ELEM-TYPE (see `org-dp-elem-props' for a complete overview)."
+If ARGS are given, they should be key-value pairs
+of (interpreted) properties for ELEM-TYPE (see
+`org-dp-elem-props' for a complete overview)."
   (let* ((type (or elem-type 'headline))
 	 (val (when (and (memq type org-dp-value-blocks)
 			 (not (org-string-nw-p
