@@ -219,7 +219,7 @@ them all :header or :parameter values repectively."
       ;; swap :parameters and :header args
       (swap
        (org-dp-rewire
-	nil t t t
+	nil t t t nil
 	:parameters (lambda (_old_ elem)
 		      (org-string-nw-p
 		       (mapconcat
@@ -244,7 +244,7 @@ them all :header or :parameter values repectively."
       ;; convert :parameters to :header args
       (header
        (org-dp-rewire
-	nil t t t
+	nil t t t nil
 	:preserve-indent 1
 	:parameters nil
 	:header (lambda (_old_ elem)
@@ -265,7 +265,7 @@ them all :header or :parameter values repectively."
       ;; convert :header args to :parameters
       (param
        (org-dp-rewire
-	nil t t t
+	nil t t t nil
 	:preserve-indent 1
 	:parameters (lambda (_old_ elem)
 		      (concat 
