@@ -464,18 +464,20 @@ and all its properties inside of the lambda expression."
 		      (if (stringp cont)
 			  (cons 'section `(nil ,cont))
 			cont))))
-    (case replace
-      (append (save-excursion (goto-char end) (insert strg)))
-      (prepend (goto-char beg) (insert strg))
-      (t (if (not replace)
-	     strg
-	   (delete-region beg end)
-	   (goto-char end)
-	   (set-marker beg nil)
-	   (set-marker paff nil)
-	   (set-marker end nil)
-	   (save-excursion (insert strg))
-	   )))))
+    (if (and (marker-position beg)
+	     (marker-position end))
+	(case replace
+	  (append (save-excursion (goto-char end) (insert strg)))
+	  (prepend (goto-char beg) (insert strg))
+	  (t (if (not replace)
+		 strg
+	       (delete-region beg end)
+	       (goto-char end)
+	       (set-marker beg nil)
+	       (set-marker paff nil)
+	       (set-marker end nil)
+	       (save-excursion (insert strg)))))
+      (if replace (insert strg) strg))))
 
 
 (defun org-dp-map ()
@@ -497,20 +499,22 @@ NO-PROPERTIES-P is non-nil too."
 		   (when (consp el) el)))
 		((consp element) element)
 		(t (org-element-at-point))))
+	 (beg (org-element-property :begin elem))
+	 (end (org-element-property :end elem))
 	 (type (org-element-type elem)))
-    (save-restriction
-      (narrow-to-region 
-       (org-element-property :begin elem)
-       (org-element-property :end elem))
-      (let ((cont (org-element-map
-		      (org-element-parse-buffer 'object)
-		      type 'org-element-contents nil t)))
-	(cond
-	 ((and interpret-p no-properties-p)
-	  (org-no-properties (org-element-interpret-data cont)))
-	 (interpret-p
-	  (org-element-interpret-data cont))
-	 (t cont))))))
+    (if (and beg end)
+	(save-restriction
+	  (narrow-to-region beg end)
+	  (let ((cont (org-element-map
+			  (org-element-parse-buffer 'object)
+			  type 'org-element-contents nil t)))
+	    (cond
+	     ((and interpret-p no-properties-p)
+	      (org-no-properties (org-element-interpret-data cont)))
+	     (interpret-p
+	      (org-element-interpret-data cont))
+	     (t cont))))
+      (org-element-contents elem))))
 
 
 (defun org-dp-in (type)
