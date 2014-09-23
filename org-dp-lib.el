@@ -124,16 +124,15 @@ see the docstring of that function for more info."
 		   (let* ((elem-at-pt (copy-list
 				       (org-element-at-point))) 
 			  (usrinfo
-			   ;; FIXME user-info not yet defined here
-			   ;; (or (when (and user-info
-			   ;; 		  (consp user-info))
-			   ;; 	 user-info)
+			   ;; ;; FIXME user-info not yet defined here
+			   ;; (if (and user-info (consp user-info))
+			   ;;     user-info
 			   (org-dp-prompt
-			     elem-at-pt			   
-			     (list 'src-block 'dynamic-block
-				   'center-block 'quote-block
-				   'special-block 'comment-block
-				   'example-block))))
+			    elem-at-pt			   
+			    (list 'src-block 'dynamic-block
+				  'center-block 'quote-block
+				  'special-block 'comment-block
+				  'example-block)))) ;)
 		     (apply 'org-dp-rewire
 			    (nth 0 usrinfo)
 			    (nth 1 usrinfo)
@@ -318,11 +317,12 @@ otherwise nil is returned."
 		 (and
 		  (or (org-at-heading-p)
 		      (outline-previous-heading))
-		  (re-search-forward org-property-drawer-re
-				     (save-excursion
-				       (org-end-of-subtree)
-				       (point))
-				     'NOERROR 1)
+		  (re-search-forward
+		   org-property-drawer-re
+		   (save-excursion
+		     (org-end-of-meta-data-and-drawers)
+		     (point))
+		   'NOERROR 1)
 		  (progn
 		    (goto-char (match-beginning 0))
 		    (org-dp-contents)))))
