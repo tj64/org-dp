@@ -254,10 +254,18 @@
 
 (defun* org-dp-create (elem-type &optional contents insert-p affiliated &rest args)
   "Create Org element of type ELEM-TYPE (headline by default).
+
 Depending on its type, CONTENTS is used as the element's content
-or5 value. If INSERT-P is non-nil, insert interpreted element at
-point. AFFILIATED should be a plist of affiliated keys and values
-if given. ARGS are key-value pairs of (interpreted) properties for
+or value. 
+
+If INSERT-P is nil, return interpreted string. If its value is
+the symbol 'data', return the raw data, otherwise, for any other
+non-nil value, insert interpreted element at point.
+
+AFFILIATED should be a plist of affiliated keys and values if
+given.
+
+If ARGS are key-value pairs of (interpreted) properties for
 ELEM-TYPE (see `org-dp-elem-props' for a complete overview)."
   (let* ((type (or elem-type 'headline))
 	 (val (when (and (memq type org-dp-value-blocks)
@@ -266,41 +274,92 @@ ELEM-TYPE (see `org-dp-elem-props' for a complete overview)."
 		(list :value (or (org-string-nw-p contents) "\n"))))
 	 ;; FIXME kind of a hack (pre-processing really necessary?)
 	 (preproc-args (cond
-		      ((and (consp (car args))
-			    (consp (caar args)))
-		       (caar args))
-		      ((consp (car args)) (car args))
-		      (t args)))
-	 (strg (org-element-interpret-data
-		(list type
-		      (cond
-		       ((consp affiliated) (org-combine-plists
-					    preproc-args affiliated
-					    val))
-		       ((not affiliated)
-			(mapcar
-			 (lambda (--aff-kw)
-			   (setq preproc-args
-				 (plist-put preproc-args
-					    --aff-kw nil)))
-			 (intersection preproc-args
-				       org-dp-affiliated-keys))
-			(org-combine-plists preproc-args val))
-		       (t (org-combine-plists preproc-args val)))
-		      (unless val
-			(if (and (stringp contents)
-				 (not (memq
-				       type
-				       org-element-all-objects)))
-			    (cons 'section `(nil ,contents))
-			  contents))))))
-    (if insert-p
-	(progn
-	  (unless (and (bolp)
-		       (not (memq type org-dp-inline-elems)))
-	    (newline))
-	  (insert strg))
-      strg)))
+			((and (consp (car args))
+			      (consp (caar args)))
+			 (caar args))
+			((consp (car args)) (car args))
+			(t args)))
+	 (data (list type
+		     (cond
+		      ((consp affiliated) (org-combine-plists
+					   preproc-args affiliated
+					   val))
+		      ((not affiliated)
+		       (mapcar
+			(lambda (--aff-kw)
+			  (setq preproc-args
+				(plist-put preproc-args
+					   --aff-kw nil)))
+			(intersection preproc-args
+				      org-dp-affiliated-keys))
+		       (org-combine-plists preproc-args val))
+		      (t (org-combine-plists preproc-args val)))
+		     (unless val
+		       (if (and (stringp contents)
+				(not (memq
+				      type
+				      org-element-all-objects)))
+			   (cons 'section `(nil ,contents))
+			 contents)))))
+    (cond
+     ((eq insert-p 'data) data)
+     (insert-p
+      (progn
+	(unless (and (bolp)
+		     (not (memq type org-dp-inline-elems)))
+	  (newline))
+	(insert (org-element-interpret-data data))))
+      (t (org-element-interpret-data data)))))
+
+;; (defun* org-dp-create (elem-type &optional contents insert-p affiliated &rest args)
+;;   "Create Org element of type ELEM-TYPE (headline by default).
+;; Depending on its type, CONTENTS is used as the element's content
+;; or5 value. If INSERT-P is non-nil, insert interpreted element at
+;; point. AFFILIATED should be a plist of affiliated keys and values
+;; if given. ARGS are key-value pairs of (interpreted) properties for
+;; ELEM-TYPE (see `org-dp-elem-props' for a complete overview)."
+;;   (let* ((type (or elem-type 'headline))
+;; 	 (val (when (and (memq type org-dp-value-blocks)
+;; 			 (not (org-string-nw-p
+;; 			       (plist-get args :value))))	
+;; 		(list :value (or (org-string-nw-p contents) "\n"))))
+;; 	 ;; FIXME kind of a hack (pre-processing really necessary?)
+;; 	 (preproc-args (cond
+;; 		      ((and (consp (car args))
+;; 			    (consp (caar args)))
+;; 		       (caar args))
+;; 		      ((consp (car args)) (car args))
+;; 		      (t args)))
+;; 	 (strg (org-element-interpret-data
+;; 		(list type
+;; 		      (cond
+;; 		       ((consp affiliated) (org-combine-plists
+;; 					    preproc-args affiliated
+;; 					    val))
+;; 		       ((not affiliated)
+;; 			(mapcar
+;; 			 (lambda (--aff-kw)
+;; 			   (setq preproc-args
+;; 				 (plist-put preproc-args
+;; 					    --aff-kw nil)))
+;; 			 (intersection preproc-args
+;; 				       org-dp-affiliated-keys))
+;; 			(org-combine-plists preproc-args val))
+;; 		       (t (org-combine-plists preproc-args val)))
+;; 		      (unless val
+;; 			(if (and (stringp contents)
+;; 				 (not (memq
+;; 				       type
+;; 				       org-element-all-objects)))
+;; 			    (cons 'section `(nil ,contents))
+;; 			  contents))))))
+;;     (if insert-p
+;; 	(progn
+;; 	  (unless (and (bolp)
+;; 		       (not (memq type org-dp-inline-elems)))
+;; 	    (newline))
+;; 	  (insert strg))
+;;       strg)))
 
 (defun* org-dp-rewire (elem-type &optional contents replace affiliated element &rest args)
   "Rewire element-at-point or ELEMENT (if given).
