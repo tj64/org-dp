@@ -495,8 +495,9 @@ and all its properties inside of the lambda expression."
 
 If MATCH-POS is given, act conditional on its value:
 
- - non-nil :: (any) move point to match-beginning:
-   -> (match-beginning 0).
+ - non-nil :: (any) move point to either match-beginning
+              (match-beginning 0), when forward-search is used, or
+              match-end (match-end 0), when backward-search is used.
 
  - (sym . n) :: (cons pair) move point to sym (beg or end) of nth
                   subexpression: -> (match-beginning n)
@@ -506,7 +507,8 @@ Otherwise match position is not changed, so search function
 `re-search-forward' will \"Set point to the end of the occurrence
 found, and return point\", which is equivalent to moving point
 to (match-end 0). If BACKWARD-SEARCH-P is non-nil,
-`re-search-backward' is used instead.
+`re-search-backward' is used instead, that will \"Set point to
+the beginning of the match, and return point.\".
 
 Integers BEG and/or END limit the search, if given. If SILENT-P
 is non-nil, a final message reporting the total number of
