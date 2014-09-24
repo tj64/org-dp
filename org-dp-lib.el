@@ -31,7 +31,7 @@
 (defcustom org-dp-misc-props (list "ID")
   "Other Org properties."
   :group 'org-dp
-  :type 'string)
+  :type '(repeat string))
 
 ;;; Utilities
 ;;; Applications
