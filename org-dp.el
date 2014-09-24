@@ -1,4 +1,4 @@
-;;; org-dp.el --- Declarative Programming with Org Elements
+;;; org-dp.el --- Declarative Local Programming with Org Elements
 ;; Author: Thorsten Jolitz <tjolitz AT gmail DOT com>
 ;; Version: 0.9
 ;; URL: https://github.com/tj64/org-dp
@@ -20,9 +20,9 @@
 
 ;;;; Commentary
 
-;; Functions for declarative programming with Org elements. They allow
-;; to declare what should be done and leave the low-level work, the
-;; "how-to", to the Org parser/interpreter framework.
+;; Functions for declarative local programming with Org elements. They
+;; allow to declare what should be done and leave the low-level work,
+;; the "how-to", to the Org parser/interpreter framework.
 
 ;; With other words, org-dp acts on the internal representation of Org
 ;; elements rather than on their textual representation, and leaves
@@ -42,6 +42,16 @@
 ;; does not have to worry about not matching properties as long as
 ;; these are not used by the interpreter when building the textual
 ;; representation of the transformed element.
+
+;; Library org-dp is meant for programming at the local level,
+;; i.e. without any (contextual) information except those about the
+;; parsed element at point. It is designed to make using the Org-mode
+;; parser/interpreter framework at local level as convenient as using
+;; it at the global level (with a complete parse-tree produced by
+;; `org-element-parse-buffer` available). It takes care of the
+;; org-element caching mechanism in that it only acts on copies of the
+;; locally parsed elements at point, never on the original parsed (and
+;; cached) object itself.
 
 ;;;; Usage
 
@@ -480,8 +490,140 @@ and all its properties inside of the lambda expression."
       (if replace (insert strg) strg))))
 
 
-(defun org-dp-map ()
-  "")
+(defun org-dp-map (fun-with-args rgxp &optional match-pos backward-search-p beg end silent-p)
+  "Apply quoted FUN-WITH-ARGS at every RGXP match.
+
+If MATCH-POS is given, act conditional on its value:
+
+ - non-nil :: (any) move point to match-beginning:
+   -> (match-beginning 0).
+
+ - (sym . n) :: (cons pair) move point to sym (beg or end) of nth
+                  subexpression: -> (match-beginning n)
+                  or (match-end n)
+
+Otherwise match position is not changed, so search function
+`re-search-forward' will \"Set point to the end of the occurrence
+found, and return point\", which is equivalent to moving point
+to (match-end 0). If BACKWARD-SEARCH-P is non-nil,
+`re-search-backward' is used instead.
+
+Integers BEG and/or END limit the search, if given. If SILENT-P
+is non-nil, a final message reporting the total number of
+mappings will be suppressed.
+
+Given the following example Org-mode buffer
+
+#+BEGIN_ORG
+ * ORG SCRATCH
+ ** Foo
+ ** Bar
+ ** Loo
+#+END_ORG
+
+an example call of `org-dp-map' yields significantly different
+results when called with forward-search or with
+backward-search. Assume FUN-WITH-ARGS is:
+ 
+#+BEGIN_SRC emacs-lisp
+  (org-dp-rewire nil (lambda (old elem) old) t nil nil
+                 :tags '(\"mytag\")
+                 :title (lambda (old elem) old)
+                 :level 3)
+#+END_SRC
+ 
+and RGXP is \"^\\*+ \", then calling 
+
+#+BEGIN_SRC emacs-lisp
+ (org-dp-map FUN-WITH-ARGS RGXP t)
+#+END_SRC
+
+i.e. mapping with forward-search, yields
+
+#+BEGIN_ORG
+ *** ORG SCRATCH :mytag:
+ ** Foo
+ ** Bar
+ ** Loo
+#+END_ORG
+
+while calling 
+ 
+#+BEGIN_SRC emacs-lisp
+ (org-dp-map FUN-WITH-ARGS RGXP nil t)
+#+END_SRC
+
+i.e. mapping with backward-search, yields
+
+#+BEGIN_ORG
+ *** ORG SCRATCH :mytag:
+ *** Foo :mytag:
+ *** Bar :mytag:
+ *** Loo :mytag:
+#+END_ORG
+
+In contrast to other mapping functions in Org-mode, this mapping
+function does not collect any information about mapped elements,
+it simply moves point quickly to all positions in a buffer(range)
+that are matched by a (forward) regexp-search and applies one of
+`org-dp''s or `org-dp-lib''s functions locally at that
+point (i.e. without any context information other than that about
+the parsed element-at-point).
+
+When calling FUN `org-dp-create', or `org-dp-rewire' with
+argument ELEMENT given, no parsing at all takes places, but newly
+created of modified elements can be inserted at point.
+
+This mapping function wraps its body in `save-excursion' and
+`save-match-data' calls, so point position and global match-data
+are preserved. It does not widen the buffer before executing its
+body, so buffer restrictions are respected. "
+  (and (consp fun-with-args)
+       (functionp (car fun-with-args))
+       (org-string-nw-p rgxp)
+       (let ((pt-min (or beg (point-min)))
+	     (pt-max (make-marker))
+	     (match-point-marker (make-marker))
+	     (loop-counter 0)
+	     eval-positions)
+	 (unless backward-search-p
+	   (set-marker-insertion-type match-point-marker t))
+	 (set-marker-insertion-type pt-max t)
+	 (move-marker pt-max (or end (point-max)))
+	 (save-excursion
+	   (save-match-data
+	     (if backward-search-p
+		 (goto-char pt-max)	 
+	       (goto-char pt-min))
+	     (while (if backward-search-p
+			(re-search-backward rgxp pt-min 'NOERROR)
+		      (re-search-forward rgxp pt-max 'NOERROR))
+	       (move-marker match-point-marker (point))
+	       (setq loop-counter (1+ loop-counter))
+	       (cond
+		((and match-pos (not (consp match-pos)))
+		 (goto-char (if backward-search-p
+				(match-end 0)
+			      (match-beginning 0))))
+		((and (consp match-pos)
+		      (memq (car match-pos) '(beg end))
+		      (integer-or-marker-p (cdr match-pos))
+		      (not (eq (cdr match-pos) 0)))
+		 (if (eq (car match-pos) 'beg)
+		     (goto-char (match-beginning (cdr match-pos)))
+		   (goto-char (match-end (cdr match-pos)))))
+		(t nil))
+	       (setq eval-positions (cons (point) eval-positions))
+	       (eval fun-with-args)
+	       (goto-char match-point-marker))))
+	 (move-marker match-point-marker nil)
+	 (move-marker pt-max nil)
+	 (unless silent-p
+	   (message
+	    (concat
+	    "%s\nwas called %d times at buffer positions %s "
+	    "of original buffer.")
+	    fun-with-args loop-counter (reverse eval-positions))))))
 
 ;;;; Utility Functions
 
