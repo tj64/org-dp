@@ -411,7 +411,70 @@ it as string."
 		   :value (when table-el-p cont))))
 
 ;;;;; Plain List
+
+
+(defun org-dp-create-plain-list (item-lst &optional insert-p)
+  "Create plain list with content ITEM-LST.
+ITEM-LST is an alist of list items with a content-string in the car and the item's property values in the cdr (in the order :bullet,  :tag,  :checkbox and :counter), e.g.:
+
+ (list
+   (\"world\" \"-\" \"hello\" on 2)
+   (\"up\" \"1\" \"whats\" 'off)
+   (\"there?\" \"a\" \"out\" 'trans)
+   (\"news?\" \"B\"))
+
+If INSERT-P is non-nil, insert plain list at point, otherwise
+return it as string."
+  (let ((cont (mapconcat
+	       (lambda (--item)
+		 (let* ((props (cdr --item))
+			(bull (or (nth 0 props) "-"))
+			(tag (nth 1 props))
+			(cbox (nth 2 props)))
+		   (org-dp-create 'item (car --item) nil nil
+				  :bullet (when bull
+					    (format "%s" bull))
+				  :tag  (when tag
+					  (format "%s" tag))
+				  :checkbox (when cbox
+					      (format "%s" cbox))
+				  :counter (nth 3 props))))
+		   item-lst "")))
+    (org-dp-create 'plain-list cont insert-p)))
+
+
+
 ;;;;; Node Properties
+
+(defun org-dp-create-plain-list (item-lst &optional insert-p)
+  "Create plain list with content ITEM-LST.
+ITEM-LST is an alist of list items with a content-string in the car and the item's property values in the cdr (in the order :bullet,  :tag,  :checkbox and :counter), e.g.:
+
+ (list
+   (\"world\" \"-\" \"hello\" on 2)
+   (\"up\" \"1\" \"whats\" 'off)
+   (\"there?\" \"a\" \"out\" 'trans)
+   (\"news?\" \"B\"))
+
+If INSERT-P is non-nil, insert plain list at point, otherwise
+return it as string."
+  (let ((cont (mapconcat
+	       (lambda (--item)
+		 (let* ((props (cdr --item))
+			(bull (or (nth 0 props) "-"))
+			(tag (nth 1 props))
+			(cbox (nth 2 props)))
+		   (org-dp-create 'item (car --item) nil nil
+				  :bullet (when bull
+					    (format "%s" bull))
+				  :tag  (when tag
+					  (format "%s" tag))
+				  :checkbox (when cbox
+					      (format "%s" cbox))
+				  :counter (nth 3 props))))
+		   item-lst "")))
+    (org-dp-create 'plain-list cont insert-p)))
+
 
 ;;;; Create Random Org Buffer
 
