@@ -415,13 +415,16 @@ it as string."
 
 (defun org-dp-create-plain-list (item-lst &optional insert-p)
   "Create plain list with content ITEM-LST.
-ITEM-LST is an alist of list items with a content-string in the car and the item's property values in the cdr (in the order :bullet,  :tag,  :checkbox and :counter), e.g.:
+
+ITEM-LST is an alist of list items with a content-string in the
+car and the item's property values in the cdr (in the
+order :bullet, :tag, :checkbox and :counter), e.g.:
 
  (list
-   (\"world\" \"-\" \"hello\" on 2)
-   (\"up\" \"1\" \"whats\" 'off)
-   (\"there?\" \"a\" \"out\" 'trans)
-   (\"news?\" \"B\"))
+   '(\"world\" \"-\" \"hello\" on 2)
+   '(\"up\" \"1\" \"whats\" 'off)
+   '(\"there?\" \"a\" \"out\" 'trans)
+   '(\"news?\" \"B\"))
 
 If INSERT-P is non-nil, insert plain list at point, otherwise
 return it as string."
@@ -446,34 +449,23 @@ return it as string."
 
 ;;;;; Node Properties
 
-(defun org-dp-create-plain-list (item-lst &optional insert-p)
-  "Create plain list with content ITEM-LST.
-ITEM-LST is an alist of list items with a content-string in the car and the item's property values in the cdr (in the order :bullet,  :tag,  :checkbox and :counter), e.g.:
+(defun org-dp-create-property-drawer (node-prop-lst &optional insert-p)
+  "Create property drawer with content NODE-PROP-LST.
+NODE-PROP-LST is an alist of lists with two string elements, the first being the :key, the second the :value, e.g.:
 
- (list
-   (\"world\" \"-\" \"hello\" on 2)
-   (\"up\" \"1\" \"whats\" 'off)
-   (\"there?\" \"a\" \"out\" 'trans)
-   (\"news?\" \"B\"))
+ (list '(\"A\" \"B\") '(\"C\" \"D\") 
 
-If INSERT-P is non-nil, insert plain list at point, otherwise
+If INSERT-P is non-nil, insert property drawer at point, otherwise
 return it as string."
   (let ((cont (mapconcat
-	       (lambda (--item)
-		 (let* ((props (cdr --item))
-			(bull (or (nth 0 props) "-"))
-			(tag (nth 1 props))
-			(cbox (nth 2 props)))
-		   (org-dp-create 'item (car --item) nil nil
-				  :bullet (when bull
-					    (format "%s" bull))
-				  :tag  (when tag
-					  (format "%s" tag))
-				  :checkbox (when cbox
-					      (format "%s" cbox))
-				  :counter (nth 3 props))))
-		   item-lst "")))
-    (org-dp-create 'plain-list cont insert-p)))
+	       (lambda (--node-prop)
+		 (org-dp-create 'node-property nil nil nil
+				:key (format
+				      "%s" (car --node-prop))
+				:value (format
+					"%s" (cadr --node-prop))))
+	       node-prop-lst "")))
+    (org-dp-create 'property-drawer cont insert-p)))
 
 
 ;;;; Create Random Org Buffer
