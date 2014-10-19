@@ -56,16 +56,16 @@ content/value instead of wrapping it in another block, except if
 explicitly asked for by user.
 
 If USER-INFO is given, it should be a list in the format returned
-by `org-dp-prompt', i.e.
+by `org-dp-prompt-all', i.e.
 
  (elem-type contents replace affiliated args)
 
 Look up that function's docstring for more information about the
 list's elements. A non-nil USER-INFO suppresses calls to
-`org-dp-prompt' and is used instead of its return value.
+`org-dp-prompt-all' and is used instead of its return value.
 
 Possible &rest PROMPT-SPEC should be keyword/value pairs used for
-restricting user-prompting via `org-dp-prompt', e.g.
+restricting user-prompting via `org-dp-prompt-all', e.g.
 
   :noprompt-affiliated t :noprompt-replace t
 
@@ -127,7 +127,7 @@ see the docstring of that function for more info."
 			   ;; ;; FIXME user-info not yet defined here
 			   ;; (if (and user-info (consp user-info))
 			   ;;     user-info
-			   (org-dp-prompt
+			   (org-dp-prompt-all
 			    elem-at-pt			   
 			    (list 'src-block 'dynamic-block
 				  'center-block 'quote-block
@@ -148,7 +148,7 @@ see the docstring of that function for more info."
      (when current-prefix-arg 
        (list (read-number "Number of lines to wrap: " 1)))))
   (let* ((usrinfo (or (when (consp user-info) user-info)
-		      (apply 'org-dp-prompt
+		      (apply 'org-dp-prompt-all
 		       nil
 		       '(src-block dynamic-block center-block
 				   quote-block special-block
@@ -451,12 +451,18 @@ return it as string."
 
 (defun org-dp-create-property-drawer (node-prop-lst &optional insert-p)
   "Create property drawer with content NODE-PROP-LST.
-NODE-PROP-LST is an alist of lists with two string elements, the first being the :key, the second the :value, e.g.:
 
- (list '(\"A\" \"B\") '(\"C\" \"D\") 
+NODE-PROP-LST is an alist of lists with two elements, the first
+being the :key, the second the :value, e.g.:
 
-If INSERT-P is non-nil, insert property drawer at point, otherwise
-return it as string."
+ (list '(\"key1\" \"val1\") '(\"key2\" \"val2\") or
+ '((key1 val1) (key2 val2))
+
+The elements of NODE-PROP-LST are formatted before use, so they
+can be of any type (string, symbol, number etc.).
+
+If INSERT-P is non-nil, insert property drawer at point,
+otherwise return it as string."
   (let ((cont (mapconcat
 	       (lambda (--node-prop)
 		 (org-dp-create 'node-property nil nil nil

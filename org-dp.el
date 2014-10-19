@@ -78,8 +78,11 @@
 ;;  - `org-dp-in' :: return position-info if inside element, nil
 ;;                    otherwise (not yet implemented)
 
+;;  - `org-dp-prompt-all' :: workhorse function for prompting the user
+
 ;;  - `org-dp-prompt-for-src-block-props' :: prompt user for src-block
 ;;       properties (adapted from ob-core.el)
+
 
 ;; Note that the src-block parameters are appended to the src-block's
 ;; headline. If you rather want them as separate #+header: lines on
@@ -168,7 +171,6 @@
 (require 'ox)
 
 ;;; Variables
-;;;; Vars
 ;;;; Consts
 
 (defconst org-dp-elem-props
@@ -241,6 +243,9 @@
 (defconst org-dp-dual-keys
   (list :caption :results)
   "Downcased keywords from `org-element-dual-keywords'.")
+
+(defconst org-dp-apply-funs '(create rewire)
+  "Functions that can be applied in `org-dp-apply'.")
 
 ;;;; Customs
 
@@ -730,7 +735,7 @@ specifies the Org Babel language."
 	     (list :language lang :parameters header-args))
     (list :language lang :parameters header-args)))
 
-(defun* org-dp-prompt (&optional elem elem-lst &key noprompt-cont noprompt-val noprompt-replace noprompt-affiliated noprompt-src-block noprompt-args)
+(defun* org-dp-prompt-all (&optional elem elem-lst &key noprompt-cont noprompt-val noprompt-replace noprompt-affiliated noprompt-src-block noprompt-args)
   "Prompt user for arguments.
 
 Optional arg ELEM, if given, is the parse-tree of an Org element,
@@ -956,6 +961,98 @@ The function's return list consists of the following elements:
     (message "return-list: %s"
 	     (list elem-type contents replace affiliated args))
     (list elem-type contents replace affiliated args)))
+
+(defun* org-dp-prompt (&optional elem elem-lst partial-results-p
+				 &key cont val repl aff src args)
+  "Prompt user for specific properties.
+
+This function uses `org-dp-prompt-all' to do the real work, but
+follows the opposite strategy: all prompt options are turned off
+by default and must be explicitly activated (while
+`org-dp-prompt-all' prompts for everything that is not explicitly
+deactivated). Called with no argmuents, it simply prompts for an
+element type. 
+
+See docstring of `org-dp-prompt-all' for more info about
+arguments ELEM and ELEM-LST. 
+
+If PARTIAL-RESULTS-P is non-nil, delete 'nil' values from
+`org-dp-prompt-all's return-list
+
+  (elem-type contents replace affiliated args)
+
+otherwise simply return it 'as-is'.
+
+Optional keyword arguments CONT, VAL, REPL, AFF, SRC and ARGS, if
+given, should be either `t' (to activate prompting for them) or
+of an adecuate type (see docstring of `org-dp-prompt-all') that
+will be used as default value without prompting."
+  (let ((res (org-dp-prompt-all
+	      elem elem-lst
+	      :noprompt-cont (cond
+			      ((and cont (not (booleanp cont)))
+			       cont)
+			      ((and cont (booleanp cont)) nil)
+			      (t t))
+	      :noprompt-val (cond
+			     ((and val (not (booleanp val)))
+			      val)
+			     ((and val (booleanp val)) nil)
+			     (t t))
+	      :noprompt-replace (cond
+				 ((and repl (not (booleanp repl)))
+				  repl)
+				 ((and repl (booleanp repl)) nil)
+				 (t t))
+	      :noprompt-affiliated (cond
+				    ((and aff (not (booleanp aff)))
+				     aff)
+				    ((and aff (booleanp aff)) nil)
+				    (t t))
+	      :noprompt-src-block (cond
+				   ((and src (not (booleanp src)))
+				    src)
+				   ((and src (booleanp src)) nil)
+				   (t t))
+	      :noprompt-args (cond
+			      ((and args (not (booleanp args)))
+			       args)
+			      ((and args (booleanp args)) nil)
+			      (t t)))))
+    (if partial-results-p res (delq nil res))))
+
+(defun org-dp-apply (lst &optional fun element)
+  "Apply org-dp function to (full) results LST of `org-dp-prompt'.
+If FUN is non-nil, it must be `memq' of variable
+`org-dp-apply-funs'. See docstring of `org-dp-prompt' for
+more info about argument LST and docstring of `org-dp-rewire' for
+more info about argument ELEMENT."
+  (let* ((fun-no-prefix (cond
+			 ((and fun (booleanp fun)) 'rewire)
+			 ;; for future extensions
+			 ((and fun (memq fun org-dp-apply-funs))
+			  fun)
+			 (t 'create)))
+	 (funct (intern
+		 (concat "org-dp-" (format "%s" fun-no-prefix)))))
+    (cond
+     ((eq fun-no-prefix 'rewire)
+      (apply funct
+	     (or (nth 0 lst) 'headline)
+	     (nth 1 lst)
+	     (nth 2 lst)
+	     (nth 3 lst)
+	     element
+	     (car-safe (nth 4 lst))))
+     ((eq fun-no-prefix 'create)
+      (apply funct
+	     (or (nth 0 lst) 'headline)
+	     (nth 1 lst)
+	     (nth 2 lst)
+	     (nth 3 lst)
+	     (car-safe (nth 4 lst))))
+     ;; for future extensions
+     (t nil))))
 
 ;;; Run Hooks and Provide
 
