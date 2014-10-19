@@ -306,12 +306,16 @@ of (interpreted) properties for ELEM-TYPE (see
 		       (org-combine-plists preproc-args val))
 		      (t (org-combine-plists preproc-args val)))
 		     (unless val
-		       (if (and (stringp contents)
+		       (cond
+			((and (stringp contents)
+			      (eq type 'headline))
+			   (cons 'section `(nil ,contents)))
+			((and (stringp contents)
 				(not (memq
 				      type
 				      org-element-all-objects)))
-			   (cons 'section `(nil ,contents))
-			 contents)))))
+			   (cons 'paragraph `(nil ,contents))) 
+			(t contents))))))
     (cond
      ((eq insert-p 'data) data)
      (insert-p
