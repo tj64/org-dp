@@ -311,16 +311,21 @@ of (interpreted) properties for ELEM-TYPE (see
 		       (org-combine-plists preproc-args val))
 		      (t (org-combine-plists preproc-args val)))
 		     (unless val
-		       (cond
-			((and (stringp contents)
-			      (eq type 'headline))
-			   (cons 'section `(nil ,contents)))
-			((and (stringp contents)
-				(not (memq
-				      type
-				      org-element-all-objects)))
-			   (cons 'paragraph `(nil ,contents))) 
-			(t contents))))))
+		       ;; (cond
+		       ;; 	((and (stringp contents)
+		       ;; 	      (eq type 'headline))
+		       ;; 	   (cons 'section `(nil ,contents)))
+		       ;; 	((and (stringp contents)
+		       ;; 		(not (memq
+		       ;; 		      type
+		       ;; 		      org-element-all-objects)))
+		       ;; 	   (cons 'paragraph `(nil ,contents))) 
+		       ;; 	(t contents))
+		       (if (and (stringp contents)
+				(memq type
+				      '(item footnote-definition)))
+			   (cons 'paragraph `(nil ,contents))
+			 contents)))))
     (cond
      ((eq insert-p 'data) data)
      (insert-p
@@ -480,9 +485,15 @@ and all its properties inside of the lambda expression."
 				       org-dp-affiliated-keys))
 			plist)
 		       (t plist))
-		      (if (stringp cont)
-			  (cons 'section `(nil ,cont))
-			cont))))
+		       (if (and (stringp cont)
+				(memq type
+				      '(item footnote-definition)))
+			   (cons 'paragraph `(nil ,cont))
+			 cont)
+		      ;; (if (stringp cont)
+		      ;; 	  (cons 'section `(nil ,cont))
+		      ;; 	cont)
+		      )))
     (if (and (marker-position beg)
 	     (marker-position end))
 	(case replace
@@ -1019,7 +1030,7 @@ will be used as default value without prompting."
 			       args)
 			      ((and args (booleanp args)) nil)
 			      (t t)))))
-    (if partial-results-p res (delq nil res))))
+    (if partial-results-p  (delq nil res) res)))
 
 (defun org-dp-apply (lst &optional fun element)
   "Apply org-dp function to (full) results LST of `org-dp-prompt'.
