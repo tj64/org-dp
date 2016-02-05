@@ -167,6 +167,8 @@
 
 ;;; Requires
 
+;; (eval-when-compile
+;;   (require 'cl))
 (require 'cl)
 (require 'ox)
 
@@ -301,7 +303,7 @@ of (interpreted) properties for ELEM-TYPE (see
 					   preproc-args affiliated
 					   val))
 		      ((not affiliated)
-		       (mapcar
+		       (mapc
 			(lambda (--aff-kw)
 			  (setq preproc-args
 				(plist-put preproc-args
@@ -477,7 +479,7 @@ and all its properties inside of the lambda expression."
 		       ((consp affiliated)
 			(org-combine-plists plist affiliated))
 		       ((not affiliated)
-			(mapcar
+			(mapc
 			 (lambda (--aff-kw)
 			   (setq plist (plist-put
 					plist --aff-kw nil)))
@@ -695,7 +697,7 @@ NO-PROPERTIES-P is non-nil too."
 Select from lists of common args and values. Argument LANG
 specifies the Org Babel language."
   (interactive
-   (list (org-icompleting-read
+   (list (completing-read
 	  "Lang: "
 	  (mapcar #'symbol-name
 		  (delete-dups
@@ -712,7 +714,7 @@ specifies the Org Babel language."
 		     (eval lang-headers))))
 	 (header-args ""))
     (while (y-or-n-p "Add arg ")
-      (let* ((key (org-icompleting-read
+      (let* ((key (completing-read
 		   "Header Arg: "
 		   (mapcar
 		    (lambda (header-spec)
@@ -730,7 +732,7 @@ specifies the Org Babel language."
 		 ((listp vals)
 		  (mapconcat
 		   (lambda (group)
-		     (let ((arg (org-icompleting-read
+		     (let ((arg (completing-read
 				 "Value: "
 				 (cons "default"
 				       (mapcar #'symbol-name
