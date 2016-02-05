@@ -320,7 +320,7 @@ otherwise nil is returned."
 		  (re-search-forward
 		   org-property-drawer-re
 		   (save-excursion
-		     (org-end-of-meta-data-and-drawers)
+		     (org-end-of-meta-data t)
 		     (point))
 		   'NOERROR 1)
 		  (progn
