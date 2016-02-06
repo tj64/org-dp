@@ -1,6 +1,6 @@
 ;;; org-dp.el --- Declarative Local Programming with Org Elements
 ;; Author: Thorsten Jolitz <tjolitz AT gmail DOT com>
-;; Version: 0.9
+;; Version: 1.0
 ;; URL: https://github.com/tj64/org-dp
 ;; Package-Requires: ((cl-lib "0.5"))
 
@@ -8,7 +8,7 @@
 ;;   :PROPERTIES:
 ;;   :copyright: Thorsten Jolitz
 ;;   :copyright-years: 2014+
-;;   :version:  0.9
+;;   :version:  1.0
 ;;   :licence:  GPL 3 or later (free software)
 ;;   :licence-url: http://www.gnu.org/licenses/
 ;;   :part-of-emacs: no
