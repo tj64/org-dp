@@ -106,7 +106,7 @@ see the docstring of that function for more info."
 		      'paragraph
 		      (lambda (_cont_ elem)
 			(let ((type (org-element-type elem)))
-			  (case type
+			  (cl-case type
 			    ((center-block
 			      quote-block special-block)
 			     (org-dp-contents elem t))
@@ -121,7 +121,7 @@ see the docstring of that function for more info."
 		   (goto-char (or (car dblock-limits)
 				  src-block-beg
 				  (car block-limits)))
-		   (let* ((elem-at-pt (copy-list
+		   (let* ((elem-at-pt (cl-copy-list
 				       (org-element-at-point))) 
 			  (usrinfo
 			   ;; ;; FIXME user-info not yet defined here
@@ -213,7 +213,7 @@ them all :header or :parameter values repectively."
 	    "Action: " '("swap" "header" "param")
 	    nil nil nil nil "header"))))
   (let ((act (or (and action (intern action)) 'swap)))
-    (case act
+    (cl-case act
       ;; swap :parameters and :header args
       (swap
        (org-dp-rewire
@@ -259,7 +259,7 @@ them all :header or :parameter values repectively."
 					   (pop params)
 					   (pop params))
 				   headers)))
-		    (remove-duplicates (append headers _old_))))))
+		    (cl-remove-duplicates (append headers _old_))))))
       ;; convert :header args to :parameters
       (param
        (org-dp-rewire
@@ -301,7 +301,7 @@ list of strings without duplicates."
 		(eval (cdr-safe --prop-class)) org-props)))
        org-dp-prop-classes)
     (ignore-errors
-      (delete-duplicates
+      (cl-delete-duplicates
        (append org-dp-misc-props org-props)))))
 
 (defun org-dp-filter-node-props (filter &optional negate-p verbose-p)
@@ -336,7 +336,7 @@ otherwise nil is returned."
 	(lambda (--prop)
 	  (let* ((key (org-element-property :key --prop))
 		 (val (org-element-property :value --prop))
-		 (memberp (case filter
+		 (memberp (cl-case filter
 			    ((special custom default file global)
 			     (member-ignore-case
 			      key
