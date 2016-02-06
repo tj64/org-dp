@@ -61,11 +61,10 @@
 ;;  - `org-dp-create' :: create a new Org element by building its
 ;;       internal representation
 
-;;  - `org-dp-rewire' :: modify (and maybe transform) and existing Org
+;;  - `org-dp-rewire' :: modify (and maybe transform) an existing Org
 ;;       element by changing its internal representation
 
-;;  - `org-dp-map' :: map elements in a buffer and 'rewire' them (not
-;;                    yet implemented)
+;;  - `org-dp-map' :: map elements in a buffer and 'rewire' them
 
 ;; and 1 command as generic UI
 
