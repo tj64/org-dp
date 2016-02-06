@@ -2,6 +2,7 @@
 ;; Author: Thorsten Jolitz <tjolitz AT gmail DOT com>
 ;; Version: 0.9
 ;; URL: https://github.com/tj64/org-dp
+;; Package-Requires: ((cl-lib "0.5"))
 
 ;;;; MetaData
 ;;   :PROPERTIES:
@@ -269,7 +270,7 @@
 ;;; Functions
 ;;;; Core Functions
 
-(defun* org-dp-create (elem-type &optional contents insert-p affiliated &rest args)
+(cl-defun org-dp-create (elem-type &optional contents insert-p affiliated &rest args)
   "Create Org element of type ELEM-TYPE (headline by default).
 
 Depending on its type, CONTENTS is used as the element's content
@@ -308,8 +309,8 @@ of (interpreted) properties for ELEM-TYPE (see
 			  (setq preproc-args
 				(plist-put preproc-args
 					   --aff-kw nil)))
-			(intersection preproc-args
-				      org-dp-affiliated-keys))
+			(cl-intersection preproc-args
+					 org-dp-affiliated-keys))
 		       (org-combine-plists preproc-args val))
 		      (t (org-combine-plists preproc-args val)))
 		     (unless val
@@ -388,7 +389,7 @@ of (interpreted) properties for ELEM-TYPE (see
 ;; 	  (insert strg))
 ;;       strg)))
 
-(defun* org-dp-rewire (elem-type &optional contents replace affiliated element &rest args)
+(cl-defun org-dp-rewire (elem-type &optional contents replace affiliated element &rest args)
   "Rewire element-at-point or ELEMENT (if given).
 
 If CONTENTS is non-nil, act conditional on its value:
@@ -447,8 +448,8 @@ and all its properties inside of the lambda expression."
 		     ((consp element) element)
 		     (t (org-element-at-point))))
 	 (type (or elem-type (org-element-type orig-elem)))
-	 (elem (copy-list orig-elem))
-	 (plist (copy-list (cadr elem)))
+	 (elem (cl-copy-list orig-elem))
+	 (plist (cl-copy-list (cadr elem)))
 	 (beg (set-marker
 	       (make-marker) (org-element-property :begin elem)))
 	 (paff (set-marker
@@ -483,8 +484,8 @@ and all its properties inside of the lambda expression."
 			 (lambda (--aff-kw)
 			   (setq plist (plist-put
 					plist --aff-kw nil)))
-			 (intersection plist
-				       org-dp-affiliated-keys))
+			 (cl-intersection plist
+					  org-dp-affiliated-keys))
 			plist)
 		       (t plist))
 		       (if (and (stringp cont)
@@ -498,7 +499,7 @@ and all its properties inside of the lambda expression."
 		      )))
     (if (and (marker-position beg)
 	     (marker-position end))
-	(case replace
+	(cl-case replace
 	  (append (save-excursion (goto-char end) (insert strg)))
 	  (prepend (goto-char beg) (insert strg))
 	  (t (if (not replace)
@@ -748,7 +749,7 @@ specifies the Org Babel language."
 	     (list :language lang :parameters header-args))
     (list :language lang :parameters header-args)))
 
-(defun* org-dp-prompt-all (&optional elem elem-lst &key noprompt-cont noprompt-val noprompt-replace noprompt-affiliated noprompt-src-block noprompt-args)
+(cl-defun org-dp-prompt-all (&optional elem elem-lst &key noprompt-cont noprompt-val noprompt-replace noprompt-affiliated noprompt-src-block noprompt-args)
   "Prompt user for arguments.
 
 Optional arg ELEM, if given, is the parse-tree of an Org element,
@@ -871,8 +872,8 @@ The function's return list consists of the following elements:
 		  --aff-key
 		  (cond
 		   ((memq --aff-key
-			  (intersection org-dp-multiple-keys
-					org-dp-dual-keys))
+			  (cl-intersection org-dp-multiple-keys
+					   org-dp-dual-keys))
 		    (let (accum)
 		      (while (y-or-n-p
 			      (format "%s - add value " --aff-key))
@@ -914,7 +915,7 @@ The function's return list consists of the following elements:
 		   (t (org-string-nw-p
 		       (read-string (format "%s " --aff-key))))))
 		 affiliated))))
-	   (delete-duplicates
+	   (cl-delete-duplicates
 	    (append org-dp-single-keys org-dp-multiple-keys
 		    org-dp-parsed-keys org-dp-dual-keys))))))
     ;; get src-block parameters
@@ -975,7 +976,7 @@ The function's return list consists of the following elements:
 	     (list elem-type contents replace affiliated args))
     (list elem-type contents replace affiliated args)))
 
-(defun* org-dp-prompt (&optional elem elem-lst partial-results-p
+(cl-defun org-dp-prompt (&optional elem elem-lst partial-results-p
 				 &key cont val repl aff src args)
   "Prompt user for specific properties.
 
