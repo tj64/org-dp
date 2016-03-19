@@ -171,6 +171,7 @@
 ;;   (require 'cl))
 (require 'cl-lib)
 (require 'ox)
+(require 'tempo)
 
 ;;; Variables
 ;;;; Consts
@@ -215,6 +216,12 @@
 (defconst org-dp-inline-elems
   (list 'babel-call 'footnote-definition 'inline-task 'table-cell)
   "List of Org elements and objects that not necessarily start with a newline.")
+
+(defconst org-dp-no-content-elems
+  (list 'babel-call 'clock 'comment 'comment-block 'diary-sexp
+	'example-block 'fixed-width 'horizontal-rule 'keyword
+	'latex-environment 'node-property 'planning 'src-block)
+  "List of Org elements without interpreted .")
 
 (defconst org-dp-value-blocks
   (list 'comment-block 'example-block 'src-block)
@@ -265,6 +272,96 @@
 ;;   "Default Babel language used for new src-blocks."
 ;;   :group 'org-dp
 ;;   :type 'string)
+
+;;;; Vars
+
+ (defvar org-dp-tempo-elem-type ""
+   "Variable used to store user input in tempo templates.
+Input is the Org Element type, e.g. 'src-block.")
+
+(defvar org-dp-tempo-elem-props
+  '(case (intern org-dp-tempo-elem-type)
+     (drawer
+      '(l ":drawer-name '(lambda (old elem) (" p " ))" n> ))
+     (dynamic-block 
+      '(l ":block-name '(lambda (old elem) (" p " ))" n>
+	  ":arguments '(lambda (old elem) (" p " ))" n>))
+     (footnote-definition 
+      '(l ":label '(lambda (old elem) (" p " ))" n> ))
+     (headline 
+      '(l ":level '(lambda (old elem) (" p " ))" n>
+	  ":priority '(lambda (old elem) (" p " ))" n>
+	  ":todo-keyword '(lambda (old elem) (" p " ))" n>
+	  ":title '(lambda (old elem) (" p " ))" n>
+	  ":tags '(lambda (old elem) (" p " ))" n>
+	  ":archivedp '(lambda (old elem) (" p " ))" n>
+	  ":commentedp '(lambda (old elem) (" p " ))" n>
+	  ":pre-blank '(lambda (old elem) (" p " ))" n>
+	  ":footnote-section-p '(lambda (old elem) (" p " ))" n>))
+     (inline-task 
+      '(l ":level '(lambda (old elem) (" p " ))" n> 
+	  ":priority '(lambda (old elem) (" p " ))" n>
+	  ":todo-keyword '(lambda (old elem) (" p " ))" n>
+	  ":title '(lambda (old elem) (" p " ))" n>
+	  ":tags '(lambda (old elem) (" p " ))" n> ))
+     (item 
+      '(l ":bullet '(lambda (old elem) (" p " ))" n> 
+	  ":checkbox '(lambda (old elem) (" p " ))" n>
+	  ":counter '(lambda (old elem) (" p " ))" n>
+	  ":tag '(lambda (old elem) (" p " ))" n> ))
+     (special-block 
+      '(l ":type '(lambda (old elem) (" p " ))" n> ))
+     (babel-call 
+      '(l ":value '(lambda (old elem) (" p " ))" n> ))
+     (clock 
+      '(l ":value '(lambda (old elem) (" p " ))" n> 
+	  ":duration '(lambda (old elem) (" p " ))" n>))
+     (comment 
+      '(l ":value '(lambda (old elem) (" p " ))" n> ))
+     (comment-block 
+      '(l ":value '(lambda (old elem) (" p " ))" n> ))
+     (diary-sexp 
+      '(l ":value '(lambda (old elem) (" p " ))" n> ))
+     (example-block 
+      '(l ":switches '(lambda (old elem) (" p " ))" n> 
+	  ":preserve-indent '(lambda (old elem) (" p " ))" n>
+	  ":value '(lambda (old elem) (" p " ))" n> ))
+     (fixed-width 
+      '(l ":value '(lambda (old elem) (" p " ))" n> ))
+     (keyword 
+      '(l ":key '(lambda (old elem) (" p " ))" n> 
+	  ":value '(lambda (old elem) (" p " ))" n>))
+     (latex-environment 
+      '(l ":value '(lambda (old elem) (" p " ))" n> ))
+     (node-property 
+      '(l ":key '(lambda (old elem) (" p " ))" n> 
+	  ":value '(lambda (old elem) (" p " ))" n>))
+     (planning 
+      '(l ":deadline '(lambda (old elem) (" p " ))" n> 
+	  ":scheduled '(lambda (old elem) (" p " ))" n>
+	  ":closed '(lambda (old elem) (" p " ))" n>))
+     (src-block 
+      '(l ":language '(lambda (old elem) (" p " ))" n> 
+	  ":switches '(lambda (old elem) (" p " ))" n>
+	  ":parameters '(lambda (old elem) (" p " ))" n>
+	  ":value '(lambda (old elem) (" p " ))" n>
+	  ":preserve-indent '(lambda (old elem) (" p " ))" n>))
+     (table 
+      '(l ":type '(lambda (old elem) (" p " ))" n> 
+	  ":value '(lambda (old elem) (" p " ))" n>
+	  ":tblfm '(lambda (old elem) (" p " ))" n>))
+     (table-row 
+      '(l ":type '(lambda (old elem) (" p " ))" n> ))
+     ;; plain-list, property-drawer, quote-block, section,
+     ;; horizontal rule, paragraph
+     (t nil))   
+  "Variable holding element properties for tempo templates.")
+
+
+ (defvar org-dp-tempo-cont
+   
+   "Variable holding element content for tempo templates.")
+
 
 ;;; Functions
 ;;;; Core Functions
@@ -1066,6 +1163,39 @@ more info about argument ELEMENT."
 	     (car-safe (nth 4 lst))))
      ;; for future extensions
      (t nil))))
+
+
+;;; Skeletons and Templates
+
+(defun org-dp-tempo-read ()
+  (interactive)
+  (setq org-dp-tempo-elem-type
+	(read-from-minibuffer "ELEM-TYPE: ")))
+
+
+    ;; (defun xyz-func ()
+    ;;     (upcase xyz-name))
+
+    ;; (tempo-define-template "xyz" 
+    ;;     '("xyz { " (org-dp-tempo-read) " } { " 'xyz-name " } { " (xyz-func) " }" )
+    ;;     "xyz" "desc" 'elisp-tempo-tags)
+
+
+  (tempo-define-template "org-dp-create"
+    '("(org-dp-create '" (org-dp-tempo-read) n>
+        r>
+	(if (member (intern org-dp-tempo-elem-type)
+		    org-dp-no-content-elems)
+	    "nil ;cont"
+	  "\"content\"") n>
+        p "t" > " ;ins " n>
+        p "nil" > " ;aff " n>
+	org-dp-tempo-elem-props      
+      > n>
+      ")" > n)
+    "crtag"
+    "Insert org-dp-create template.")
+
 
 ;;; Run Hooks and Provide
 
