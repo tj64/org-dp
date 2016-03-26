@@ -275,92 +275,246 @@
 
 ;;;; Vars
 
- (defvar org-dp-tempo-elem-type ""
+(defvar org-dp-tempo-elem-type ""
    "Variable used to store user input in tempo templates.
 Input is the Org Element type, e.g. 'src-block.")
 
-(defvar org-dp-tempo-elem-props
+(defvar org-dp-tempo-create-with-comments-elem-props
+  '(case (intern org-dp-tempo-elem-type)
+     (drawer
+      '(l ":drawer-name " "\"" p "\"" n> ))
+     (dynamic-block 
+      '(l ":block-name " "\"" p "\"" n>
+	  ":arguments " "\"" p "\"" n>))
+     (footnote-definition 
+      '(l ":label " "\"" p "\"" n> ))
+     (headline 
+      '(l ":level " p "1 ;1..8" n>
+	  ":priority " p "nil ;65|66|67"  n>
+	  ":todo-keyword " p "TODO" n>
+	  ":title " "\"" p "\"" n>
+	  ":tags " "'(" p " ) ;(\"tag1\" \"tag2\")" n>
+	  ":commentedp " p "nil ;t" n>
+	  ":pre-blank " p "0" n>
+	  ":footnote-section-p " p "nil ;t" n>))
+     (inline-task 
+      '(l ":level " p "1 ;1..8" n>
+	  ":priority " p "nil ;65|66|67"  n>
+	  ":todo-keyword " p "TODO" n>
+	  ":title " "\"" p "\"" n>
+	  ":tags " "'(" p " ) ;(\"tag1\" \"tag2\")" n>))
+     (item 
+      '(l ":bullet " "\"" p "\"" n> 
+	  ":checkbox " "\"" p "\"" n>
+	  ":counter " "\"" p "\"" n>
+	  ":tag " "\"" p "\"" n> ))
+     (special-block 
+      '(l ":type " "\"" p "\"" n> ))
+     (babel-call 
+      '(l ":value " "\"" p "\"" n> ))
+     (clock 
+      '(l ":value " "\"" p "\"" n> 
+	  ":duration " "\"" p "\"" n>))
+     (comment 
+      '(l ":value " "\"" p "\"" n> ))
+     (comment-block 
+      '(l ":value " "\"" p "\"" n> ))
+     (diary-sexp 
+      '(l ":value " "\"" p "\"" n> ))
+     (example-block 
+      '(l ":switches " "\"" p "\"" n> 
+	  ":preserve-indent " "\"" p "\"" n>
+	  ":value " "\"" p "\"" n> ))
+     (fixed-width 
+      '(l ":value " "\"" p "\"" n> ))
+     (keyword 
+      '(l ":key " "\"" p "\"" n> 
+	  ":value " "\"" p "\"" n>))
+     (latex-environment 
+      '(l ":value " "\"" p "\"" n> ))
+     (node-property 
+      '(l ":key " "\"" p "\"" n> 
+	  ":value " "\"" p "\"" n>))
+     (planning 
+      '(l ":deadline " "\"" p "\"" n> 
+	  ":scheduled " "\"" p "\"" n>
+	  ":closed " "\"" p "\"" n>))
+     (src-block 
+      '(l ":language " "\"" p "\"" n> 
+	  ":switches " "\"" p "\"" n>
+	  ":parameters " "\"" p "\"" n>
+	  ":value " "\"" p "\"" n>
+	  ":preserve-indent " "\"" p "\"" n>))
+     (table 
+      '(l ":type " "\"" p "\"" n> 
+	  ":value " "\"" p "\"" n>
+	  ":tblfm " "\"" p "\"" n>))
+     (table-row 
+      '(l ":type " "\"" p "\"" n> ))
+     ;; plain-list, property-drawer, quote-block, section,
+     ;; horizontal rule, paragraph
+     (t nil))   
+  "Variable holding element properties for org-dp-create tempo
+  template.")
+
+(defvar org-dp-tempo-create-elem-props
+  '(case (intern org-dp-tempo-elem-type)
+     (drawer
+      '(l ":drawer-name " "\"" p "\"" n> ))
+     (dynamic-block 
+      '(l ":block-name " "\"" p "\"" n>
+	  ":arguments " "\"" p "\"" n>))
+     (footnote-definition 
+      '(l ":label " "\"" p "\"" n> ))
+     (headline 
+      '(l ":level " p "1 ;1..8" n>
+	  ":priority " p "nil ;65|66|67"  n>
+	  ":todo-keyword " p "TODO" n>
+	  ":title " "\"" p "\"" n>
+	  ":tags " "'(" p " )" n>
+	  ":commentedp " p "nil" n>
+	  ":pre-blank " p "0" n>
+	  ":footnote-section-p " p "nil" n>))
+     (inline-task 
+      '(l ":level " p "1 ;1..8" n>
+	  ":priority " p "nil ;65|66|67"  n>
+	  ":todo-keyword " p "TODO" n>
+	  ":title " "\"" p "\"" n>
+	  ":tags " "'(" p " )" n>))
+     (item 
+      '(l ":bullet " "\"" p "\"" n> 
+	  ":checkbox " "\"" p "\"" n>
+	  ":counter " "\"" p "\"" n>
+	  ":tag " "\"" p "\"" n> ))
+     (special-block 
+      '(l ":type " "\"" p "\"" n> ))
+     (babel-call 
+      '(l ":value " "\"" p "\"" n> ))
+     (clock 
+      '(l ":value " "\"" p "\"" n> 
+	  ":duration " "\"" p "\"" n>))
+     (comment 
+      '(l ":value " "\"" p "\"" n> ))
+     (comment-block 
+      '(l ":value " "\"" p "\"" n> ))
+     (diary-sexp 
+      '(l ":value " "\"" p "\"" n> ))
+     (example-block 
+      '(l ":switches " "\"" p "\"" n> 
+	  ":preserve-indent " "\"" p "\"" n>
+	  ":value " "\"" p "\"" n> ))
+     (fixed-width 
+      '(l ":value " "\"" p "\"" n> ))
+     (keyword 
+      '(l ":key " "\"" p "\"" n> 
+	  ":value " "\"" p "\"" n>))
+     (latex-environment 
+      '(l ":value " "\"" p "\"" n> ))
+     (node-property 
+      '(l ":key " "\"" p "\"" n> 
+	  ":value " "\"" p "\"" n>))
+     (planning 
+      '(l ":deadline " "\"" p "\"" n> 
+	  ":scheduled " "\"" p "\"" n>
+	  ":closed " "\"" p "\"" n>))
+     (src-block 
+      '(l ":language " "\"" p "\"" n> 
+	  ":switches " "\"" p "\"" n>
+	  ":parameters " "\"" p "\"" n>
+	  ":value " "\"" p "\"" n>
+	  ":preserve-indent " "\"" p "\"" n>))
+     (table 
+      '(l ":type " "\"" p "\"" n> 
+	  ":value " "\"" p "\"" n>
+	  ":tblfm " "\"" p "\"" n>))
+     (table-row 
+      '(l ":type " "\"" p "\"" n> ))
+     ;; plain-list, property-drawer, quote-block, section,
+     ;; horizontal rule, paragraph
+     (t nil))   
+  "Variable holding element properties for org-dp-create tempo
+  template.")
+
+(defvar org-dp-tempo-rewire-elem-props
   '(case (intern org-dp-tempo-elem-type)
      (drawer
       '(l ":drawer-name '(lambda (old elem) (" p " ))" n> ))
      (dynamic-block 
-      '(l ":block-name '(lambda (old elem) (" p " ))" n>
-	  ":arguments '(lambda (old elem) (" p " ))" n>))
+      '(l ":block-name '(lambda (old elem) " p " )" n>
+	  ":arguments '(lambda (old elem) " p " )" n>))
      (footnote-definition 
-      '(l ":label '(lambda (old elem) (" p " ))" n> ))
+      '(l ":label '(lambda (old elem) " p " )" n> ))
      (headline 
-      '(l ":level '(lambda (old elem) (" p " ))" n>
-	  ":priority '(lambda (old elem) (" p " ))" n>
-	  ":todo-keyword '(lambda (old elem) (" p " ))" n>
-	  ":title '(lambda (old elem) (" p " ))" n>
-	  ":tags '(lambda (old elem) (" p " ))" n>
-	  ":archivedp '(lambda (old elem) (" p " ))" n>
-	  ":commentedp '(lambda (old elem) (" p " ))" n>
-	  ":pre-blank '(lambda (old elem) (" p " ))" n>
-	  ":footnote-section-p '(lambda (old elem) (" p " ))" n>))
+      '(l ":level '(lambda (old elem) " p " )" n>
+	  ":priority '(lambda (old elem) " p " )" n>
+	  ":todo-keyword '(lambda (old elem) " p " )" n>
+	  ":title '(lambda (old elem) " p " )" n>
+	  ":tags '(lambda (old elem) " p " )" n>
+	  ":commentedp '(lambda (old elem) " p " )" n>
+	  ":pre-blank '(lambda (old elem) " p " )" n>
+	  ":footnote-section-p '(lambda (old elem) " p " )" n>))
      (inline-task 
-      '(l ":level '(lambda (old elem) (" p " ))" n> 
-	  ":priority '(lambda (old elem) (" p " ))" n>
-	  ":todo-keyword '(lambda (old elem) (" p " ))" n>
-	  ":title '(lambda (old elem) (" p " ))" n>
-	  ":tags '(lambda (old elem) (" p " ))" n> ))
+      '(l ":level '(lambda (old elem) " p " )" n> 
+	  ":priority '(lambda (old elem) " p " )" n>
+	  ":todo-keyword '(lambda (old elem) " p " )" n>
+	  ":title '(lambda (old elem) " p " )" n>
+	  ":tags '(lambda (old elem) " p " )" n> ))
      (item 
-      '(l ":bullet '(lambda (old elem) (" p " ))" n> 
-	  ":checkbox '(lambda (old elem) (" p " ))" n>
-	  ":counter '(lambda (old elem) (" p " ))" n>
-	  ":tag '(lambda (old elem) (" p " ))" n> ))
+      '(l ":bullet '(lambda (old elem) " p " )" n> 
+	  ":checkbox '(lambda (old elem) " p " )" n>
+	  ":counter '(lambda (old elem) " p " )" n>
+	  ":tag '(lambda (old elem) " p " )" n> ))
      (special-block 
-      '(l ":type '(lambda (old elem) (" p " ))" n> ))
+      '(l ":type '(lambda (old elem) " p " )" n> ))
      (babel-call 
-      '(l ":value '(lambda (old elem) (" p " ))" n> ))
+      '(l ":value '(lambda (old elem) " p " )" n> ))
      (clock 
-      '(l ":value '(lambda (old elem) (" p " ))" n> 
-	  ":duration '(lambda (old elem) (" p " ))" n>))
+      '(l ":value '(lambda (old elem) " p " )" n> 
+	  ":duration '(lambda (old elem) " p " )" n>))
      (comment 
-      '(l ":value '(lambda (old elem) (" p " ))" n> ))
+      '(l ":value '(lambda (old elem) " p " )" n> ))
      (comment-block 
-      '(l ":value '(lambda (old elem) (" p " ))" n> ))
+      '(l ":value '(lambda (old elem) " p " )" n> ))
      (diary-sexp 
-      '(l ":value '(lambda (old elem) (" p " ))" n> ))
+      '(l ":value '(lambda (old elem) " p " )" n> ))
      (example-block 
-      '(l ":switches '(lambda (old elem) (" p " ))" n> 
-	  ":preserve-indent '(lambda (old elem) (" p " ))" n>
-	  ":value '(lambda (old elem) (" p " ))" n> ))
+      '(l ":switches '(lambda (old elem) " p " )" n> 
+	  ":preserve-indent '(lambda (old elem) " p " )" n>
+	  ":value '(lambda (old elem) " p " )" n> ))
      (fixed-width 
-      '(l ":value '(lambda (old elem) (" p " ))" n> ))
+      '(l ":value '(lambda (old elem) " p " )" n> ))
      (keyword 
-      '(l ":key '(lambda (old elem) (" p " ))" n> 
-	  ":value '(lambda (old elem) (" p " ))" n>))
+      '(l ":key '(lambda (old elem) " p " )" n> 
+	  ":value '(lambda (old elem) " p " )" n>))
      (latex-environment 
-      '(l ":value '(lambda (old elem) (" p " ))" n> ))
+      '(l ":value '(lambda (old elem) " p " )" n> ))
      (node-property 
-      '(l ":key '(lambda (old elem) (" p " ))" n> 
-	  ":value '(lambda (old elem) (" p " ))" n>))
+      '(l ":key '(lambda (old elem) " p " )" n> 
+	  ":value '(lambda (old elem) " p " )" n>))
      (planning 
-      '(l ":deadline '(lambda (old elem) (" p " ))" n> 
-	  ":scheduled '(lambda (old elem) (" p " ))" n>
-	  ":closed '(lambda (old elem) (" p " ))" n>))
+      '(l ":deadline '(lambda (old elem) " p " )" n> 
+	  ":scheduled '(lambda (old elem) " p " )" n>
+	  ":closed '(lambda (old elem) " p " )" n>))
      (src-block 
-      '(l ":language '(lambda (old elem) (" p " ))" n> 
-	  ":switches '(lambda (old elem) (" p " ))" n>
-	  ":parameters '(lambda (old elem) (" p " ))" n>
-	  ":value '(lambda (old elem) (" p " ))" n>
-	  ":preserve-indent '(lambda (old elem) (" p " ))" n>))
+      '(l ":language '(lambda (old elem) " p " )" n> 
+	  ":switches '(lambda (old elem) " p " )" n>
+	  ":parameters '(lambda (old elem) " p " )" n>
+	  ":value '(lambda (old elem) " p " )" n>
+	  ":preserve-indent '(lambda (old elem) " p " )" n>))
      (table 
-      '(l ":type '(lambda (old elem) (" p " ))" n> 
-	  ":value '(lambda (old elem) (" p " ))" n>
-	  ":tblfm '(lambda (old elem) (" p " ))" n>))
+      '(l ":type '(lambda (old elem) " p " )" n> 
+	  ":value '(lambda (old elem) " p " )" n>
+	  ":tblfm '(lambda (old elem) " p " )" n>))
      (table-row 
-      '(l ":type '(lambda (old elem) (" p " ))" n> ))
+      '(l ":type '(lambda (old elem) " p " )" n> ))
      ;; plain-list, property-drawer, quote-block, section,
      ;; horizontal rule, paragraph
      (t nil))   
-  "Variable holding element properties for tempo templates.")
+  "Variable holding element properties for org-dp-rewire tempo
+  template.")
 
-
- (defvar org-dp-tempo-cont
-   
-   "Variable holding element content for tempo templates.")
+(defvar org-dp-tempo-cont ""
+  "Variable holding element content for tempo templates.")
 
 
 ;;; Functions
@@ -1167,35 +1321,79 @@ more info about argument ELEMENT."
 
 ;;; Skeletons and Templates
 
+;;;; Custom prompt function
 (defun org-dp-tempo-read ()
-  (interactive)
+  "Read function for tempo template."
   (setq org-dp-tempo-elem-type
-	(read-from-minibuffer "ELEM-TYPE: ")))
+	(ido-completing-read "ELEM-TYPE: "
+			     (mapcar 'symbol-name
+				     org-element-all-elements))))
 
+;;;; Create templates
 
-    ;; (defun xyz-func ()
-    ;;     (upcase xyz-name))
-
-    ;; (tempo-define-template "xyz" 
-    ;;     '("xyz { " (org-dp-tempo-read) " } { " 'xyz-name " } { " (xyz-func) " }" )
-    ;;     "xyz" "desc" 'elisp-tempo-tags)
-
-
-  (tempo-define-template "org-dp-create"
-    '("(org-dp-create '" (org-dp-tempo-read) n>
-        r>
+  (tempo-define-template "org-dp-create-with-comments"
+    '(";; Affiliated keywords: '(:kw1 val1 :kw2 val2 ...)" n>
+      ";; :name \"val\"" n>
+      ";; :plot \"val\"" n>
+      ";; :results (\"val\") or (\"val\" \"key\"\)" n>
+      ";; :header (\"val\") or (\"val1\" \"val2\")" n>
+      ";; :caption ((\"val\")) or ((\"val\" \"key\"\)) or" n>
+      ";;          ((\"val2\" \"key2\"\) (\"val2\" \"key2\"\))" n>
+      ";; :attr_xyz (\"val\") or (\"val1\" \"val2\")" n>
+      "(org-dp-create '" (org-dp-tempo-read) 
 	(if (member (intern org-dp-tempo-elem-type)
 		    org-dp-no-content-elems)
-	    "nil ;cont"
-	  "\"content\"") n>
-        p "t" > " ;ins " n>
-        p "nil" > " ;aff " n>
-	org-dp-tempo-elem-props      
-      > n>
-      ")" > n)
+	    '(l " nil t ;cont ins" n>) 
+	  '(l n> "\"" p "\\n\" ;cont" n>
+	  "t" > " ;ins " n>))
+	  "nil" > " ;aff " n>
+	org-dp-tempo-create-with-comments-elem-props
+       ")" )
     "crtag"
     "Insert org-dp-create template.")
 
+  (tempo-define-template "org-dp-create"
+    '("(org-dp-create '" (org-dp-tempo-read) 
+	(if (member (intern org-dp-tempo-elem-type)
+		    org-dp-no-content-elems)
+	    '(l " nil t ;cont ins" n>) 
+	  '(l n> "\"" p "\\n\" ;cont" n>
+	  "t" > " ;ins " n>))
+	  "nil" > " ;aff " n>
+	org-dp-tempo-create-elem-props
+       ")" )
+    "crtag"
+    "Insert org-dp-create template.")
+
+;;;; Rewire templates
+
+  (tempo-define-template "org-dp-rewire-lambda"
+    '("(org-dp-rewire '" (org-dp-tempo-read) 
+	(if (member (intern org-dp-tempo-elem-type)
+		    org-dp-no-content-elems)
+	    '(l " nil t ;cont ins" n>) 
+	  '(l n> "\"" p "\\n\" ;cont" n>
+	  "t" > " ;ins " n>))
+	  "nil" > " ;aff " n>
+	  "nil" > " ;elem " n>
+	org-dp-tempo-rewire-elem-props
+       ")" )
+    "rwltag"
+    "Insert org-dp-rewire template with lambdas.")
+
+  (tempo-define-template "org-dp-rewire"
+    '("(org-dp-rewire '" (org-dp-tempo-read) 
+	(if (member (intern org-dp-tempo-elem-type)
+		    org-dp-no-content-elems)
+	    '(l " nil t ;cont ins" n>) 
+	  '(l n> "\"" p "\\n\" ;cont" n>
+	  "t" > " ;ins " n>))
+	  "nil" > " ;aff " n>
+	  "nil" > " ;elem " n>
+	org-dp-tempo-create-elem-props
+       ")" )
+    "rwtag"
+    "Insert org-dp-rewire template.")
 
 ;;; Run Hooks and Provide
 
