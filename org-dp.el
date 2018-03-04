@@ -1349,7 +1349,7 @@ more info about argument ELEMENT."
 	  "nil" > " ;aff " n>
 	org-dp-tempo-create-with-comments-elem-props
        ")" )
-    "crtag"
+    "crctag"
     "Insert org-dp-create template.")
 
   (tempo-define-template "org-dp-create"
