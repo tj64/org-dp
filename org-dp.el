@@ -709,7 +709,8 @@ and all its properties inside of the lambda expression."
 	       (make-marker) (org-element-property :end elem)))
 	 (cont (let ((orig-elem-cont (org-dp-contents elem)))
 		 (cond
-		  ((and (consp contents) (functionp contents))
+		  ;; ((and (consp contents) (functionp contents))
+		  ((and contents (functionp contents))
 		   (apply contents (list orig-elem-cont elem)))
 		  ((and contents (booleanp contents))
 		   orig-elem-cont)
