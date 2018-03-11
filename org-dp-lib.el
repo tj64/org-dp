@@ -313,20 +313,22 @@ strings, or a (single) regexp-string. If NEGATE-P is non-nil, the
 properties not matched by the filter are returned. If VERBOSE-P
 is non-nil, a message is printed if no property-drawer is found,
 otherwise nil is returned."
-  (let ((props (save-excursion
+  (let* ((elem (save-excursion
 		 (and
 		  (or (org-at-heading-p)
 		      (outline-previous-heading))
-		  (re-search-forward
-		   org-property-drawer-re
-		   (save-excursion
-		     (org-end-of-meta-data t)
-		     (point))
-		   'NOERROR 1)
-		  (progn
-		    (goto-char (match-beginning 0))
-		    (org-dp-contents)))))
-	filtered-props)
+		  (org-element-at-point))))
+	 (beg (org-element-property :begin elem))
+	 (end (org-element-property :end elem))
+	 (props (progn
+		  (and beg end)
+		  (save-restriction
+		    (narrow-to-region beg end)
+		    (org-element-map
+			(org-element-parse-buffer 'object)
+			'property-drawer
+		      'org-element-contents nil t) )))
+	 filtered-props)
     (if (not props)
 	(when verbose-p
 	  (message
@@ -358,6 +360,36 @@ otherwise nil is returned."
 	      (setq filtered-props
 		    (cons (cons key val) filtered-props))))))
       filtered-props)))
+
+
+	 ;; 	  (re-search-forward
+	 ;; 	   org-property-drawer-re
+	 ;; 	   (save-excursion
+	 ;; 	     (org-end-of-meta-data t)
+	 ;; 	     (point))
+	 ;; 	   'NOERROR 1)
+	 ;; 	  (progn
+	 ;; 	    (goto-char (match-beginning 0))
+	 ;; 	    (org-dp-contents)))))
+	 ;; (props (save-excursion
+	 ;; 	 (and
+	 ;; 	  (or (org-at-heading-p)
+	 ;; 	      (outline-previous-heading))
+	 ;; 	  (org-element-map
+	 ;; 		  (org-element-parse-buffer 'object)
+	 ;; 		  type 'org-element-contents nil t)
+		  
+
+	 ;; 	  (re-search-forward
+	 ;; 	   org-property-drawer-re
+	 ;; 	   (save-excursion
+	 ;; 	     (org-end-of-meta-data t)
+	 ;; 	     (point))
+	 ;; 	   'NOERROR 1)
+	 ;; 	  (progn
+	 ;; 	    (goto-char (match-beginning 0))
+	 ;; 	    (org-dp-contents)))))
+
 
 ;;;; Create Composite Org Elements
 
