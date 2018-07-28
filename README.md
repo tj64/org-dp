@@ -123,27 +123,29 @@ org-dp-lib.el for swapping headers and parameters.
     #+NAME: ex2
     #+HEADER: :results raw
     #+BEGIN_SRC emacs-lisp :cache no :noweb yes
-      (org-dp-rewire 'headline
-                     (lambda (_cont_ elem)
-                       (concat
-                        "This was an\n\n"
-                        (org-element-property :language elem)
-                        "\n\nsrc-block with header args\n\n"
-                        (org-element-property :parameters elem)
-                        "\n\nbefore."))
-                        'append '(:name "transformed Src-Block")
-                        :level 1
-                        :title (lambda (_old_ elem)
-                                 (mapconcat
-                                  'upcase
-                                  (split-string
-                                   (car
-                                    (org-element-property :header elem))
-    				":")
-                                  " "))
-                        :tags (lambda (_old_ elem)
-                                (list (org-element-property :name elem)))
-    		    :header nil)
+    (org-dp-rewire 'headline
+                   (lambda (_cont_ elem)
+                     (concat
+                      "This was an\n\n"
+                      (org-element-property :language elem)
+                      "\n\nsrc-block with header args\n\n"
+                      (org-element-property :parameters elem)
+                      "\n\nbefore."))
+                   'append
+                   '(:name "transformed Src-Block")
+                   nil
+                   :level 1
+                   :title (lambda (_old_ elem)
+                            (mapconcat
+                             'upcase
+                             (split-string
+                              (car
+                               (org-element-property :header elem))
+                              ":")
+                             " "))
+                   :tags (lambda (_old_ elem)
+                           (list (org-element-property :name elem)))
+                   :header nil)
     #+END_SRC
 
     #+NAME: transformed Src-Block
